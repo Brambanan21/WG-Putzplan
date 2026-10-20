@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Eine Woche = ein Dokument, ID = Montag der Woche (z. B. 2026-10-19)
+    match /weeks/{week} {
+      allow read: if true;
+      allow write: if week.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && request.resource.data.keys().hasOnly(['done', 'swap'])
+        && request.resource.data.done is map
+        && request.resource.data.swap is map
+        && request.resource.data.done.keys().hasOnly(['bad1', 'bad2', 'kueche', 'flur'])
+        && request.resource.data.swap.keys().hasOnly(['bad1', 'bad2', 'kueche', 'flur']);
+    }
+    // Alles andere ist gesperrt
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

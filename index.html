@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eef1f2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Putzplan">
+<title>WG-Putzplan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: Wochenkopf mit Navigation, darunter vier Aufgaben-"Fliesen" im Raster, darunter Rotations-Vorschau als Tabelle */
+:root {
+  --bg: #eef1f2;
+  --grout: #dbe1e3;
+  --tile: #ffffff;
+  --ink: #1d2b36;
+  --muted: #5c6b75;
+  --accent: #e3b505;
+  --accent-ink: #2a2200;
+  --done: #2f7d5b;
+  --done-bg: #e3f2ea;
+  --line: #c9d1d5;
+  --me: #fff6d1;
+  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11181d; --grout: #1b252c; --tile: #18222a; --ink: #e6ecef; --muted: #93a2ab;
+    --accent: #f0c52a; --accent-ink: #231c00; --done: #6fcf9f; --done-bg: #173226;
+    --line: #2c3a43; --me: #322b10; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11181d; --grout: #1b252c; --tile: #18222a; --ink: #e6ecef; --muted: #93a2ab;
+  --accent: #f0c52a; --accent-ink: #231c00; --done: #6fcf9f; --done-bg: #173226;
+  --line: #2c3a43; --me: #322b10; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(28px, 6vw, 40px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+h2 { font-size: 18px; font-weight: 700; }
+.label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between; }
+.who { display: flex; flex-direction: column; gap: 6px; }
+.who-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill {
+  font: inherit; font-size: 13.5px; font-weight: 500; border: 1px solid var(--line); background: var(--tile); color: var(--ink);
+  padding: 5px 12px; border-radius: 999px; cursor: pointer;
+}
+.pill[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.pill:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.weekbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.weekbar .title { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.weekbar .kw { font-family: var(--font-display); font-size: 24px; font-weight: 700; }
+.weekbar .range { color: var(--muted); font-size: 13.5px; }
+.nav { display: flex; gap: 6px; }
+.btn {
+  font: inherit; font-size: 14px; font-weight: 600; border: 1px solid var(--line); background: var(--tile); color: var(--ink);
+  border-radius: 10px; padding: 7px 12px; cursor: pointer;
+}
+.btn:hover { border-color: var(--muted); }
+.btn[disabled] { opacity: .45; cursor: default; }
+.progress { font-size: 13.5px; color: var(--muted); }
+.progress strong { color: var(--ink); }
+
+/* Fliesenraster */
+.tiles {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px;
+  background: var(--grout); padding: 6px; border-radius: 14px;
+}
+.tile {
+  background: var(--tile); border-radius: 9px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0;
+  position: relative;
+}
+.tile.is-done { background: var(--done-bg); }
+.tile.is-me { box-shadow: inset 0 0 0 2px var(--accent); }
+.tile .room { display: flex; align-items: center; gap: 10px; }
+.tile .icon { width: 30px; height: 30px; flex: none; color: var(--muted); }
+.tile .room h2 { font-size: 17px; }
+.tile .person { font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
+.tile .swapped { font-size: 12.5px; color: var(--muted); }
+.tile .status { font-size: 13px; color: var(--muted); min-height: 1.5em; }
+.tile.is-done .status { color: var(--done); font-weight: 600; }
+.tile .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+.check {
+  font: inherit; font-weight: 600; font-size: 14px; border-radius: 10px; padding: 8px 12px; cursor: pointer; flex: 1;
+  border: 1px solid var(--ink); background: var(--ink); color: var(--tile); min-width: 0;
+}
+.tile.is-done .check { background: transparent; color: var(--done); border-color: var(--done); }
+.check[disabled] { opacity: .45; cursor: default; }
+.swap-sel {
+  font: inherit; font-size: 13.5px; border-radius: 10px; padding: 7px 8px; border: 1px solid var(--line);
+  background: var(--tile); color: var(--ink); cursor: pointer; max-width: 100%;
+}
+.free {
+  display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted);
+  padding: 10px 14px; border: 1px dashed var(--line); border-radius: 10px;
+}
+.free strong { color: var(--ink); }
+
+/* Vorschau */
+.ahead { display: flex; flex-direction: column; gap: 10px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--tile); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: var(--grout); }
+tr.current td { font-weight: 600; }
+tr.current td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+td.me { background: var(--me); }
+td .tick { color: var(--done); margin-left: 4px; }
+
+.note { font-size: 13px; color: var(--muted); max-width: 65ch; }
+.banner { font-size: 13.5px; padding: 10px 14px; border-radius: 10px; background: var(--me); color: var(--ink); }
+@media (prefers-reduced-motion: no-preference) { .tile { transition: background .2s; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="label">Wohngemeinschaft · Wochenrotation</div>
+      <h1>Putzplan</h1>
+    </div>
+    <div class="who">
+      <span class="label" id="who-label">Wer bist du?</span>
+      <div class="who-row" id="who" role="group" aria-labelledby="who-label"></div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <section aria-labelledby="kw" style="display:flex;flex-direction:column;gap:14px">
+    <div class="weekbar">
+      <div class="title">
+        <span class="kw" id="kw">KW</span>
+        <span class="range mono" id="range"></span>
+      </div>
+      <span class="progress" id="progress"></span>
+      <div class="nav">
+        <button class="btn" id="prev" aria-label="Vorherige Woche">←</button>
+        <button class="btn" id="today">Diese Woche</button>
+        <button class="btn" id="next" aria-label="Nächste Woche">→</button>
+      </div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="free" id="free"></div>
+  </section>
+
+  <section class="ahead">
+    <h2>Die nächsten Wochen</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Woche</th><th>Bad 1</th><th>Bad 2</th><th>Küche</th><th>Flur</th><th>Frei</th></tr></thead>
+        <tbody id="ahead"></tbody>
+      </table>
+    </div>
+    <p class="note">Jede Woche rückt jede Person eine Aufgabe weiter, eine Person hat frei. Die Woche geht von Montag bis Sonntag. Wer tauschen will, ändert in der Kachel die Person. Das gilt nur für diese eine Woche. Eine Zeile in der Tabelle antippen springt zu der Woche.</p>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Firebase-Projekt: wg-putzplan-79c34
+const firebaseConfig = {
+  apiKey: "AIzaSyDZNo6SOPREApm7DxrwBONxHQ2yJJk5svI",
+  authDomain: "wg-putzplan-79c34.firebaseapp.com",
+  projectId: "wg-putzplan-79c34",
+  storageBucket: "wg-putzplan-79c34.firebasestorage.app",
+  messagingSenderId: "1035483785848",
+  appId: "1:1035483785848:web:54a652786d648286d59b8d"
+};
+
+(function () {
+  const PEOPLE = ["Flo", "Yurai", "Son", "Dominik", "Bram"];
+  const TASKS = [
+    { id: "bad1", name: "Bad 1", icon: "bath" },
+    { id: "bad2", name: "Bad 2", icon: "bath" },
+    { id: "kueche", name: "Küche", icon: "pan" },
+    { id: "flur", name: "Flur", icon: "broom" }
+  ];
+  // Slots je Woche: 0..3 = Aufgaben, 4 = frei
+  const ANCHOR = Date.UTC(2026, 9, 19); // Montag, 19.10.2026 (KW 43)
+  const DAY = 86400000;
+
+  const ICONS = {
+    bath: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 16h24v3a7 7 0 0 1-7 7H11a7 7 0 0 1-7-7v-3Z" fill="none"/><path d="M8 16V7a3 3 0 0 1 6 0"/><path d="M10 26l-1 3M22 26l1 3"/></svg>',
+    pan: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="13" cy="18" rx="9" ry="6" fill="none"/><path d="M22 17l8-4"/><path d="M10 8c0-2 2-2 2-4M15 8c0-2 2-2 2-4"/></svg>',
+    broom: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 3 15 14"/><path d="M12 13l7 6-4 9c-4-1-8-4-10-8l7-7Z" fill="none"/><path d="M9 22l3-3M12 25l3-3"/></svg>'
+  };
+
+  const mod = (n, m) => ((n % m) + m) % m;
+  function mondayUTC(d) {
+    const t = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+    const wd = mod(new Date(t).getUTCDay() - 1, 7);
+    return t - wd * DAY;
+  }
+  function isoWeek(t) {
+    const d = new Date(t + 3 * DAY); // Donnerstag der Woche
+    const y = d.getUTCFullYear();
+    const jan4 = Date.UTC(y, 0, 4);
+    const wk1 = jan4 - mod(new Date(jan4).getUTCDay() - 1, 7) * DAY;
+    return { year: y, week: 1 + Math.round((t - wk1) / (7 * DAY)) };
+  }
+  const keyOf = t => new Date(t).toISOString().slice(0, 10);
+  const fmt = t => { const d = new Date(t); return String(d.getUTCDate()).padStart(2, "0") + "." + String(d.getUTCMonth() + 1).padStart(2, "0") + "."; };
+  const weekIdx = t => Math.round((t - ANCHOR) / (7 * DAY));
+
+  function baseAssign(t) {
+    const k = weekIdx(t);
+    const bySlot = [];
+    PEOPLE.forEach((p, i) => { bySlot[mod(i + k, 5)] = p; });
+    return bySlot; // [bad1, bad2, kueche, flur, frei]
+  }
+  function assignment(t) {
+    const base = baseAssign(t);
+    const doc = weeks[keyOf(t)] || {};
+    const swap = doc.swap || {};
+    const out = {};
+    TASKS.forEach((task, i) => { out[task.id] = swap[task.id] || base[i]; });
+    const busy = new Set(Object.values(out));
+    out.frei = PEOPLE.filter(p => !busy.has(p));
+    return { out, base };
+  }
+
+  let me = null;
+  try { me = localStorage.getItem("putzplan-me"); } catch (e) {}
+  const thisMonday = mondayUTC(new Date());
+  let shown = thisMonday;
+  let weeks = {};
+  let db = null, canWrite = false, dbReady = false;
+
+  const $ = id => document.getElementById(id);
+  const banner = $("banner");
+
+  function renderWho() {
+    const row = $("who");
+    row.textContent = "";
+    PEOPLE.forEach(p => {
+      const b = document.createElement("button");
+      b.className = "pill"; b.type = "button"; b.textContent = p; b.id = "who-" + p;
+      b.setAttribute("aria-pressed", String(me === p));
+      b.addEventListener("click", () => {
+        me = me === p ? null : p;
+        try { me ? localStorage.setItem("putzplan-me", me) : localStorage.removeItem("putzplan-me"); } catch (e) {}
+        render();
+      });
+      row.appendChild(b);
+    });
+  }
+
+  function renderWeek() {
+    const { year, week } = isoWeek(shown);
+    $("kw").textContent = "KW " + week + (shown === thisMonday ? " · diese Woche" : "");
+    $("range").textContent = fmt(shown) + " – " + fmt(shown + 6 * DAY) + year;
+    const doc = weeks[keyOf(shown)] || {};
+    const done = doc.done || {};
+    const { out, base } = assignment(shown);
+    const tiles = $("tiles");
+    tiles.textContent = "";
+    let count = 0;
+    TASKS.forEach((task, i) => {
+      const person = out[task.id];
+      const d = done[task.id];
+      if (d) count++;
+      const el = document.createElement("article");
+      el.className = "tile" + (d ? " is-done" : "") + (me && person === me ? " is-me" : "");
+      el.innerHTML =
+        '<div class="room"><span class="icon">' + ICONS[task.icon] + '</span><h2></h2></div>' +
+        '<div><div class="person"></div><div class="swapped"></div></div>' +
+        '<div class="status"></div>' +
+        '<div class="actions"><button class="check" type="button"></button><select class="swap-sel" aria-label="Person tauschen"></select></div>';
+      el.querySelector("h2").textContent = task.name;
+      el.querySelector(".person").textContent = person;
+      el.querySelector(".swapped").textContent = person !== base[i] ? "getauscht, eigentlich " + base[i] : "";
+      if (d) {
+        const at = new Date(d.at);
+        const when = at.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+        el.querySelector(".status").textContent = "Erledigt " + when + (d.by && d.by !== person ? " von " + d.by : "");
+      } else {
+        el.querySelector(".status").textContent = "Noch offen";
+      }
+      const btn = el.querySelector(".check");
+      btn.id = "check-" + task.id;
+      btn.textContent = d ? "Zurücksetzen" : "Erledigt";
+      btn.disabled = !canWrite;
+      btn.addEventListener("click", () => toggleDone(task.id, person, btn));
+      const sel = el.querySelector(".swap-sel");
+      sel.id = "swap-" + task.id;
+      PEOPLE.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; if (p === person) o.selected = true; sel.appendChild(o); });
+      sel.disabled = !canWrite;
+      sel.addEventListener("change", () => setSwap(task.id, sel.value, base[i]));
+      tiles.appendChild(el);
+    });
+    $("progress").innerHTML = "<strong>" + count + " von 4</strong> erledigt";
+    const free = out.frei;
+    $("free").innerHTML = "";
+    const s = document.createElement("span");
+    s.innerHTML = "Frei diese Woche: <strong></strong>";
+    s.querySelector("strong").textContent = free.length ? free.join(", ") : "niemand";
+    $("free").appendChild(s);
+    $("prev").disabled = false;
+  }
+
+  function renderAhead() {
+    const tb = $("ahead");
+    tb.textContent = "";
+    for (let w = -1; w < 6; w++) {
+      const t = thisMonday + w * 7 * DAY;
+      const { out } = assignment(t);
+      const done = (weeks[keyOf(t)] || {}).done || {};
+      const tr = document.createElement("tr");
+      if (t === shown) tr.className = "current";
+      const td0 = document.createElement("td");
+      td0.className = "mono";
+      td0.textContent = "KW " + isoWeek(t).week + "  " + fmt(t);
+      tr.appendChild(td0);
+      TASKS.forEach(task => {
+        const td = document.createElement("td");
+        td.textContent = out[task.id];
+        if (done[task.id]) { const s = document.createElement("span"); s.className = "tick"; s.textContent = "✓"; s.setAttribute("aria-label", "erledigt"); td.appendChild(s); }
+        if (me && out[task.id] === me) td.className = "me";
+        tr.appendChild(td);
+      });
+      const tdf = document.createElement("td");
+      tdf.textContent = out.frei.join(", ");
+      if (me && out.frei.includes(me)) tdf.className = "me";
+      tr.appendChild(tdf);
+      tr.addEventListener("click", () => { shown = t; render(); });
+      tb.appendChild(tr);
+    }
+  }
+
+  function render() { renderWho(); renderWeek(); renderAhead(); }
+
+  // Schreiben: eine Woche = ein Dokument, Schreibvorgänge pro Dokument nacheinander
+  const queues = {};
+  function writeWeek(t, mutate) {
+    if (!db || !canWrite) return;
+    const key = keyOf(t);
+    const cur = JSON.parse(JSON.stringify(weeks[key] || {}));
+    cur.done = cur.done || {}; cur.swap = cur.swap || {};
+    mutate(cur);
+    weeks[key] = cur; // sofort anzeigen
+    render();
+    queues[key] = (queues[key] || Promise.resolve()).then(() => setDoc(doc(db, "weeks", key), cur)).catch(e => {
+      if (e && e.code === "permission-denied") {
+        showBanner("Der Eintrag wurde abgelehnt. Lade die Seite neu und versuch es noch mal.");
+      } else if (e && e.code === "unavailable") {
+        showBanner("Speichern hat nicht geklappt, die Verbindung hakt. Versuch es gleich noch mal.");
+      } else {
+        showBanner("Speichern hat nicht geklappt. Lade die Seite neu und versuch es noch mal.");
+      }
+      render();
+    });
+  }
+  function toggleDone(taskId, person, btn) {
+    const wasDone = !!((weeks[keyOf(shown)] || {}).done || {})[taskId];
+    if (!wasDone && canWrite) celebrate(btn);
+    writeWeek(shown, doc => {
+      if (doc.done[taskId]) delete doc.done[taskId];
+      else doc.done[taskId] = { at: new Date().toISOString(), by: me || person };
+    });
+  }
+  function celebrate(btn) {
+    if (typeof window.confetti !== "function") return;
+    const r = btn.getBoundingClientRect();
+    const origin = { x: (r.left + r.width / 2) / window.innerWidth, y: (r.top + r.height / 2) / window.innerHeight };
+    const colors = ["#e3b505", "#2f7d5b", "#4a90c2", "#ffffff", "#f07c5a"];
+    const base = { origin, colors, disableForReducedMotion: true, zIndex: 1000 };
+    window.confetti({ ...base, particleCount: 90, spread: 75, startVelocity: 45 });
+    setTimeout(() => window.confetti({ ...base, particleCount: 50, spread: 120, startVelocity: 30, scalar: 0.8 }), 150);
+  }
+  function setSwap(taskId, person, basePerson) {
+    writeWeek(shown, doc => {
+      if (person === basePerson) delete doc.swap[taskId]; else doc.swap[taskId] = person;
+    });
+  }
+  function showBanner(text) { banner.textContent = text; banner.hidden = false; }
+
+  $("prev").addEventListener("click", () => { shown -= 7 * DAY; render(); });
+  $("next").addEventListener("click", () => { shown += 7 * DAY; render(); });
+  $("today").addEventListener("click", () => { shown = thisMonday; render(); });
+
+  render();
+
+  const offlineTimer = setTimeout(() => {
+    if (!dbReady) showBanner("Der gemeinsame Speicher ist gerade nicht erreichbar. Du siehst die Rotation, kannst aber nichts abhaken.");
+  }, 11000);
+
+  try {
+    if (firebaseConfig.apiKey === "HIER_EINFUEGEN") throw new Error("config");
+    db = getFirestore(initializeApp(firebaseConfig));
+    canWrite = true;
+    render();
+    onSnapshot(collection(db, "weeks"), snap => {
+      dbReady = true; clearTimeout(offlineTimer); banner.hidden = true;
+      const next = {};
+      snap.forEach(d => { next[d.id] = d.data(); });
+      weeks = next;
+      render();
+    }, () => showBanner("Die Verbindung zum gemeinsamen Speicher ist abgebrochen. Lade die Seite neu."));
+  } catch (e) {
+    clearTimeout(offlineTimer);
+    showBanner("Firebase ist noch nicht eingerichtet. Die Rotation siehst du schon, Abhaken geht erst danach.");
+  }
+})();
+</script>
+</body>
+</html>
