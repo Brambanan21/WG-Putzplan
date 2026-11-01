@@ -238,7 +238,7 @@ td .sx { color: var(--muted); font-weight: 400; }
         <tbody id="ahead"></tbody>
       </table>
     </div>
-    <p class="note">Jede Woche rückt jede Person eine Aufgabe weiter. Wer den Flur hat, saugt außerdem zweimal pro Woche die ganze Wohnung. Die fünfte Person übernimmt die Sonderaufgabe, die jede Woche wechselt. Die Woche geht von Montag bis Sonntag. Wer tauschen will, ändert in der Kachel die Person, das gilt nur für diese eine Woche. Eine Zeile in der Tabelle antippen springt zu der Woche.</p>
+    <p class="note">Jede Woche rückt jede Person eine Aufgabe weiter. Wer den Flur hat, saugt außerdem einmal pro Woche die ganze Wohnung. Die fünfte Person übernimmt die Sonderaufgabe, die jede Woche wechselt. Die Woche geht von Montag bis Sonntag. Wer tauschen will, ändert in der Kachel die Person, das gilt nur für diese eine Woche. Eine Zeile in der Tabelle antippen springt zu der Woche.</p>
   </section>
 </div>
 
@@ -262,8 +262,8 @@ const TASKS = [
   { id: "bad2", name: "Kleines Bad", short: "Kl. Bad", icon: "shower" },
   { id: "kueche", name: "Küche", short: "Küche", icon: "pan" },
   { id: "flur", name: "Flur + Saugen", short: "Flur", icon: "broom",
-    hint: "Flur putzen und zweimal pro Woche die ganze Wohnung saugen.",
-    subs: [{ id: "saugen1", label: "1. Mal saugen" }, { id: "saugen2", label: "2. Mal saugen" }] },
+    hint: "Flur putzen und einmal pro Woche die ganze Wohnung saugen.",
+    subs: [{ id: "saugen1", label: "Wohnung gesaugt" }] },
   { id: "extra", name: "Sonderaufgabe", short: "Extra", icon: "sparkle", extra: true }
 ];
 // Wechselt jede Woche der Reihe nach
