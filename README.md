@@ -1,6 +1,6 @@
 # WG-Putzplan
 
-Gemeinsamer Putzplan für Bad 1, Bad 2, Küche und Flur. Fünf Leute (Flo, Yurai, Son, Dominik, Bram) wechseln sich wöchentlich ab, eine Person hat jeweils frei. Abhaken und Tauschen wird über Firebase Firestore synchronisiert. Es gibt keinen Login, wer den Link hat, kann eintragen.
+Gemeinsamer Putzplan für großes Bad, kleines Bad, Küche, Wohnung saugen und eine wechselnde Sonderaufgabe, dazu eine gemeinsame Einkaufsliste. Fünf Leute (Flo, Yurai, Son, Dominik, Bram) wechseln sich wöchentlich ab. Abhaken, Tauschen und die Einkaufsliste werden über Firebase Firestore synchronisiert. Es gibt keinen Login, wer den Link hat, kann eintragen.
 
 ## Einrichtung (eigenes Firebase-Projekt)
 

@@ -234,11 +234,11 @@ td .sx { color: var(--muted); font-weight: 400; }
     <h2>Die nächsten Wochen</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Woche</th><th>Großes Bad</th><th>Kleines Bad</th><th>Küche</th><th>Flur + Saugen</th><th>Sonderaufgabe</th></tr></thead>
+        <thead><tr><th>Woche</th><th>Großes Bad</th><th>Kleines Bad</th><th>Küche</th><th>Wohnung saugen</th><th>Sonderaufgabe</th></tr></thead>
         <tbody id="ahead"></tbody>
       </table>
     </div>
-    <p class="note">Jede Woche rückt jede Person eine Aufgabe weiter. Wer den Flur hat, saugt außerdem einmal pro Woche die ganze Wohnung. Die fünfte Person übernimmt die Sonderaufgabe, die jede Woche wechselt. Die Woche geht von Montag bis Sonntag. Wer tauschen will, ändert in der Kachel die Person, das gilt nur für diese eine Woche. Eine Zeile in der Tabelle antippen springt zu der Woche.</p>
+    <p class="note">Jede Woche rückt jede Person eine Aufgabe weiter. Die fünfte Person übernimmt die Sonderaufgabe, die jede Woche wechselt. Die Woche geht von Montag bis Sonntag. Wer tauschen will, ändert in der Kachel die Person, das gilt nur für diese eine Woche. Eine Zeile in der Tabelle antippen springt zu der Woche.</p>
   </section>
 </div>
 
@@ -261,9 +261,8 @@ const TASKS = [
   { id: "bad1", name: "Großes Bad", short: "Gr. Bad", icon: "tub" },
   { id: "bad2", name: "Kleines Bad", short: "Kl. Bad", icon: "shower" },
   { id: "kueche", name: "Küche", short: "Küche", icon: "pan" },
-  { id: "flur", name: "Flur + Saugen", short: "Flur", icon: "broom",
-    hint: "Flur putzen und einmal pro Woche die ganze Wohnung saugen.",
-    subs: [{ id: "saugen1", label: "Wohnung gesaugt" }] },
+  { id: "flur", name: "Wohnung saugen", short: "Saugen", icon: "broom",
+    hint: "Einmal pro Woche die ganze Wohnung saugen." },
   { id: "extra", name: "Sonderaufgabe", short: "Extra", icon: "sparkle", extra: true }
 ];
 // Wechselt jede Woche der Reihe nach
@@ -604,7 +603,7 @@ render();
 function startDemo() {
   const now = Date.now(), iso = ms => new Date(ms).toISOString();
   let n = 0;
-  weeks[keyOf(thisMonday)] = { done: { bad2: { at: iso(now - DAY), by: "Yurai" }, saugen1: { at: iso(now - 2 * DAY), by: "Dominik" } }, swap: {} };
+  weeks[keyOf(thisMonday)] = { done: { bad2: { at: iso(now - DAY), by: "Yurai" }, flur: { at: iso(now - 2 * DAY), by: "Son" } }, swap: {} };
   items = [
     { id: "d1", name: "Toilettenpapier", by: "Son", at: iso(now - 3 * DAY), bought: false },
     { id: "d2", name: "Spülmittel", by: "Flo", at: iso(now - DAY), bought: false },
