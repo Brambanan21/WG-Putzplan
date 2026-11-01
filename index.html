@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* Layout: Wochenkopf mit Navigation, darunter vier Aufgaben-"Fliesen" im Raster, darunter Rotations-Vorschau als Tabelle */
+/* Layout: Wochenkopf, fünf Aufgaben-"Fliesen", Einkaufsliste, Rotations-Vorschau als Tabelle */
 :root {
   --bg: #eef1f2;
   --grout: #dbe1e3;
@@ -48,12 +48,14 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 24px 48px;
 }
-.wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; }
 h1, h2 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
 h1 { font-size: clamp(28px, 6vw, 40px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
 h2 { font-size: 18px; font-weight: 700; }
 .label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+section { display: flex; flex-direction: column; gap: 14px; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between; }
 .who { display: flex; flex-direction: column; gap: 6px; }
@@ -63,10 +65,9 @@ header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justi
   padding: 5px 12px; border-radius: 999px; cursor: pointer;
 }
 .pill[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-.pill:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .weekbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.weekbar .title { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.weekbar .title { display: flex; flex-direction: column; min-width: 0; flex: 1 1 240px; }
 .weekbar .kw { font-family: var(--font-display); font-size: 24px; font-weight: 700; }
 .weekbar .range { color: var(--muted); font-size: 13.5px; }
 .nav { display: flex; gap: 6px; }
@@ -76,46 +77,89 @@ header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justi
 }
 .btn:hover { border-color: var(--muted); }
 .btn[disabled] { opacity: .45; cursor: default; }
+.btn.primary { background: var(--ink); color: var(--tile); border-color: var(--ink); }
 .progress { font-size: 13.5px; color: var(--muted); }
 .progress strong { color: var(--ink); }
 
 /* Fliesenraster */
 .tiles {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
   background: var(--grout); padding: 6px; border-radius: 14px;
 }
+@media (max-width: 860px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile.extra { grid-column: 1 / -1; }
+}
+@media (max-width: 380px) { .tiles { grid-template-columns: 1fr; } }
 .tile {
-  background: var(--tile); border-radius: 9px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0;
-  position: relative;
+  background: var(--tile); border-radius: 9px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
 }
 .tile.is-done { background: var(--done-bg); }
 .tile.is-me { box-shadow: inset 0 0 0 2px var(--accent); }
 .tile .room { display: flex; align-items: center; gap: 10px; }
 .tile .icon { width: 30px; height: 30px; flex: none; color: var(--muted); }
-.tile .room h2 { font-size: 17px; }
+.tile .icon svg { width: 100%; height: 100%; display: block; }
+.tile .room h2 { font-size: 16.5px; line-height: 1.2; }
 .tile .person { font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
 .tile .swapped { font-size: 12.5px; color: var(--muted); }
+.tile .job { font-size: 14px; font-weight: 600; line-height: 1.35; }
+.tile .hint { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
 .tile .status { font-size: 13px; color: var(--muted); min-height: 1.5em; }
 .tile.is-done .status { color: var(--done); font-weight: 600; }
 .tile .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
 .check {
-  font: inherit; font-weight: 600; font-size: 14px; border-radius: 10px; padding: 8px 12px; cursor: pointer; flex: 1;
+  font: inherit; font-weight: 600; font-size: 14px; border-radius: 10px; padding: 8px 12px; cursor: pointer; flex: 1 1 100%;
   border: 1px solid var(--ink); background: var(--ink); color: var(--tile); min-width: 0;
 }
-.tile.is-done .check { background: transparent; color: var(--done); border-color: var(--done); }
-.check[disabled] { opacity: .45; cursor: default; }
+.check.on { background: transparent; color: var(--done); border-color: var(--done); }
+.check[disabled], .sub[disabled] { opacity: .45; cursor: default; }
+.subs { display: flex; flex-direction: column; gap: 6px; }
+.subs .label { font-size: 10.5px; }
+.sub-row { display: flex; gap: 6px; }
+.sub {
+  font: inherit; font-size: 13px; font-weight: 600; flex: 1; min-width: 0; border-radius: 8px; padding: 6px 8px; cursor: pointer;
+  border: 1px dashed var(--muted); background: transparent; color: var(--ink); text-align: left;
+  display: flex; flex-direction: column; line-height: 1.25;
+}
+.sub small { font-weight: 500; color: var(--muted); font-size: 11.5px; }
+.sub.on { border-style: solid; border-color: var(--done); color: var(--done); background: var(--done-bg); }
+.sub.on small { color: var(--done); }
 .swap-sel {
   font: inherit; font-size: 13.5px; border-radius: 10px; padding: 7px 8px; border: 1px solid var(--line);
-  background: var(--tile); color: var(--ink); cursor: pointer; max-width: 100%;
+  background: var(--tile); color: var(--ink); cursor: pointer; width: 100%;
 }
-.free {
-  display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted);
-  padding: 10px 14px; border: 1px dashed var(--line); border-radius: 10px;
+
+/* Einkaufsliste */
+.shop-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.shop-head .count { font-size: 13.5px; color: var(--muted); }
+.shop-card { background: var(--tile); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.shop-form { display: flex; gap: 8px; }
+.shop-form input {
+  font: inherit; flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px;
+  background: var(--bg); color: var(--ink);
 }
-.free strong { color: var(--ink); }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick .pill { font-size: 13px; padding: 4px 10px; }
+.quick .pill::before { content: "+ "; color: var(--muted); }
+.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.item { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); min-width: 0; }
+.item:first-child { border-top: 0; }
+.tick-btn {
+  width: 26px; height: 26px; flex: none; border-radius: 50%; border: 2px solid var(--muted); background: transparent; cursor: pointer;
+  display: grid; place-items: center; color: var(--tile); padding: 0;
+}
+.item.bought .tick-btn { background: var(--done); border-color: var(--done); }
+.item .text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.item .name { font-weight: 600; overflow-wrap: anywhere; }
+.item.bought .name { text-decoration: line-through; color: var(--muted); font-weight: 500; }
+.item .meta { font-size: 12px; color: var(--muted); }
+.del { font: inherit; font-size: 18px; line-height: 1; border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 6px 8px; border-radius: 8px; }
+.del:hover { color: var(--ink); background: var(--grout); }
+.empty { font-size: 14px; color: var(--muted); padding: 4px 0; }
+.bought-wrap summary { cursor: pointer; font-size: 13.5px; color: var(--muted); font-weight: 600; padding: 4px 0; }
+.bought-wrap .btn { margin-top: 8px; font-size: 13px; }
 
 /* Vorschau */
-.ahead { display: flex; flex-direction: column; gap: 10px; }
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--tile); }
 table { border-collapse: collapse; width: 100%; font-size: 14px; }
 th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -127,8 +171,9 @@ tr.current td { font-weight: 600; }
 tr.current td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 td.me { background: var(--me); }
 td .tick { color: var(--done); margin-left: 4px; }
+td .sx { color: var(--muted); font-weight: 400; }
 
-.note { font-size: 13px; color: var(--muted); max-width: 65ch; }
+.note { font-size: 13px; color: var(--muted); max-width: 70ch; margin: 0; }
 .banner { font-size: 13.5px; padding: 10px 14px; border-radius: 10px; background: var(--me); color: var(--ink); }
 @media (prefers-reduced-motion: no-preference) { .tile { transition: background .2s; } }
 </style>
@@ -149,7 +194,7 @@ td .tick { color: var(--done); margin-left: 4px; }
 
   <div class="banner" id="banner" hidden></div>
 
-  <section aria-labelledby="kw" style="display:flex;flex-direction:column;gap:14px">
+  <section aria-labelledby="kw">
     <div class="weekbar">
       <div class="title">
         <span class="kw" id="kw">KW</span>
@@ -163,26 +208,42 @@ td .tick { color: var(--done); margin-left: 4px; }
       </div>
     </div>
     <div class="tiles" id="tiles"></div>
-    <div class="free" id="free"></div>
   </section>
 
-  <section class="ahead">
+  <section aria-labelledby="shop-title">
+    <div class="shop-head">
+      <h2 id="shop-title">Einkaufsliste</h2>
+      <span class="count" id="shop-count"></span>
+    </div>
+    <div class="shop-card">
+      <form class="shop-form" id="shop-form">
+        <input id="shop-input" type="text" maxlength="60" autocomplete="off" placeholder="Was fehlt? z. B. Spülmittel" aria-label="Neuer Eintrag">
+        <button class="btn primary" type="submit" id="shop-add">Hinzufügen</button>
+      </form>
+      <div class="quick" id="quick" aria-label="Schnell hinzufügen"></div>
+      <ul class="items" id="shop-open"></ul>
+      <details class="bought-wrap" id="bought-wrap" hidden>
+        <summary id="bought-summary">Besorgt</summary>
+        <ul class="items" id="shop-bought"></ul>
+        <button class="btn" type="button" id="clear-bought">Besorgte aus der Liste löschen</button>
+      </details>
+    </div>
+  </section>
+
+  <section>
     <h2>Die nächsten Wochen</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Woche</th><th>Bad 1</th><th>Bad 2</th><th>Küche</th><th>Flur</th><th>Frei</th></tr></thead>
+        <thead><tr><th>Woche</th><th>Großes Bad</th><th>Kleines Bad</th><th>Küche</th><th>Flur + Saugen</th><th>Sonderaufgabe</th></tr></thead>
         <tbody id="ahead"></tbody>
       </table>
     </div>
-    <p class="note">Jede Woche rückt jede Person eine Aufgabe weiter, eine Person hat frei. Die Woche geht von Montag bis Sonntag. Wer tauschen will, ändert in der Kachel die Person. Das gilt nur für diese eine Woche. Eine Zeile in der Tabelle antippen springt zu der Woche.</p>
+    <p class="note">Jede Woche rückt jede Person eine Aufgabe weiter. Wer den Flur hat, saugt außerdem zweimal pro Woche die ganze Wohnung. Die fünfte Person übernimmt die Sonderaufgabe, die jede Woche wechselt. Die Woche geht von Montag bis Sonntag. Wer tauschen will, ändert in der Kachel die Person, das gilt nur für diese eine Woche. Eine Zeile in der Tabelle antippen springt zu der Woche.</p>
   </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
 // Firebase-Projekt: wg-putzplan-79c34
 const firebaseConfig = {
   apiKey: "AIzaSyDZNo6SOPREApm7DxrwBONxHQ2yJJk5svI",
@@ -192,241 +253,411 @@ const firebaseConfig = {
   messagingSenderId: "1035483785848",
   appId: "1:1035483785848:web:54a652786d648286d59b8d"
 };
+const FB = "https://www.gstatic.com/firebasejs/10.12.2/";
 
-(function () {
-  const PEOPLE = ["Flo", "Yurai", "Son", "Dominik", "Bram"];
-  const TASKS = [
-    { id: "bad1", name: "Bad 1", icon: "bath" },
-    { id: "bad2", name: "Bad 2", icon: "bath" },
-    { id: "kueche", name: "Küche", icon: "pan" },
-    { id: "flur", name: "Flur", icon: "broom" }
-  ];
-  // Slots je Woche: 0..3 = Aufgaben, 4 = frei
-  const ANCHOR = Date.UTC(2026, 9, 19); // Montag, 19.10.2026 (KW 43)
-  const DAY = 86400000;
+const PEOPLE = ["Flo", "Yurai", "Son", "Dominik", "Bram"];
+// Reihenfolge = Rotations-Slots. Wer in einer Woche Slot 4 hat, macht die Sonderaufgabe.
+const TASKS = [
+  { id: "bad1", name: "Großes Bad", short: "Gr. Bad", icon: "tub" },
+  { id: "bad2", name: "Kleines Bad", short: "Kl. Bad", icon: "shower" },
+  { id: "kueche", name: "Küche", short: "Küche", icon: "pan" },
+  { id: "flur", name: "Flur + Saugen", short: "Flur", icon: "broom",
+    hint: "Flur putzen und zweimal pro Woche die ganze Wohnung saugen.",
+    subs: [{ id: "saugen1", label: "1. Mal saugen" }, { id: "saugen2", label: "2. Mal saugen" }] },
+  { id: "extra", name: "Sonderaufgabe", short: "Extra", icon: "sparkle", extra: true }
+];
+// Wechselt jede Woche der Reihe nach
+const EXTRAS = [
+  { short: "Kühlschränke", long: "Kühlschränke ausräumen und auswischen" },
+  { short: "Backofen", long: "Backofen und Bleche reinigen" },
+  { short: "Herd", long: "Herd und Dunstabzugshaube entfetten" },
+  { short: "Küchenschränke", long: "Küchenschränke innen auswischen" },
+  { short: "Fenster", long: "Fenster und Fensterbänke putzen" },
+  { short: "Mülleimer", long: "Mülleimer auswaschen" }
+];
+const QUICK = ["Toilettenpapier", "Küchenrolle", "Spülmittel", "Müllbeutel", "Schwämme", "Allzweckreiniger", "WC-Reiniger", "Handseife"];
+const CHECKS = TASKS.flatMap(t => [t.id, ...(t.subs || []).map(s => s.id)]);
 
-  const ICONS = {
-    bath: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 16h24v3a7 7 0 0 1-7 7H11a7 7 0 0 1-7-7v-3Z" fill="none"/><path d="M8 16V7a3 3 0 0 1 6 0"/><path d="M10 26l-1 3M22 26l1 3"/></svg>',
-    pan: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="13" cy="18" rx="9" ry="6" fill="none"/><path d="M22 17l8-4"/><path d="M10 8c0-2 2-2 2-4M15 8c0-2 2-2 2-4"/></svg>',
-    broom: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 3 15 14"/><path d="M12 13l7 6-4 9c-4-1-8-4-10-8l7-7Z" fill="none"/><path d="M9 22l3-3M12 25l3-3"/></svg>'
-  };
+const ANCHOR = Date.UTC(2026, 9, 19); // Montag, 19.10.2026 (KW 43)
+const DAY = 86400000;
 
-  const mod = (n, m) => ((n % m) + m) % m;
-  function mondayUTC(d) {
-    const t = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
-    const wd = mod(new Date(t).getUTCDay() - 1, 7);
-    return t - wd * DAY;
-  }
-  function isoWeek(t) {
-    const d = new Date(t + 3 * DAY); // Donnerstag der Woche
-    const y = d.getUTCFullYear();
-    const jan4 = Date.UTC(y, 0, 4);
-    const wk1 = jan4 - mod(new Date(jan4).getUTCDay() - 1, 7) * DAY;
-    return { year: y, week: 1 + Math.round((t - wk1) / (7 * DAY)) };
-  }
-  const keyOf = t => new Date(t).toISOString().slice(0, 10);
-  const fmt = t => { const d = new Date(t); return String(d.getUTCDate()).padStart(2, "0") + "." + String(d.getUTCMonth() + 1).padStart(2, "0") + "."; };
-  const weekIdx = t => Math.round((t - ANCHOR) / (7 * DAY));
+const ICONS = {
+  tub: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h26"/><path d="M5 15v3a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-3"/><path d="M9.5 25 8 28.5M22.5 25l1.5 3.5"/><circle cx="11" cy="9.5" r="2"/><circle cx="17" cy="6.5" r="1.5"/><circle cx="21" cy="10.5" r="1.5"/></svg>',
+  shower: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 29V9a5 5 0 0 1 10 0v1"/><path d="M10.5 10h11l-1.5 3h-8Z"/><path d="M13 17v2M16 17v3M19 17v2M14 23v2M18 23v2"/></svg>',
+  pan: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="13" cy="18" rx="9" ry="6"/><path d="M22 17l8-4"/><path d="M10 8c0-2 2-2 2-4M15 8c0-2 2-2 2-4"/></svg>',
+  broom: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 3 15 14"/><path d="M12 13l7 6-4 9c-4-1-8-4-10-8l7-7Z"/><path d="M9 22l3-3M12 25l3-3"/></svg>',
+  sparkle: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M14 4l2.5 7.5L24 14l-7.5 2.5L14 24l-2.5-7.5L4 14l7.5-2.5Z"/><path d="M25 20l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z"/></svg>',
+  check: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>'
+};
 
-  function baseAssign(t) {
-    const k = weekIdx(t);
-    const bySlot = [];
-    PEOPLE.forEach((p, i) => { bySlot[mod(i + k, 5)] = p; });
-    return bySlot; // [bad1, bad2, kueche, flur, frei]
-  }
-  function assignment(t) {
-    const base = baseAssign(t);
-    const doc = weeks[keyOf(t)] || {};
-    const swap = doc.swap || {};
-    const out = {};
-    TASKS.forEach((task, i) => { out[task.id] = swap[task.id] || base[i]; });
-    const busy = new Set(Object.values(out));
-    out.frei = PEOPLE.filter(p => !busy.has(p));
-    return { out, base };
-  }
+const mod = (n, m) => ((n % m) + m) % m;
+function mondayUTC(d) {
+  const t = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  return t - mod(new Date(t).getUTCDay() - 1, 7) * DAY;
+}
+function isoWeek(t) {
+  const y = new Date(t + 3 * DAY).getUTCFullYear();
+  const jan4 = Date.UTC(y, 0, 4);
+  const wk1 = jan4 - mod(new Date(jan4).getUTCDay() - 1, 7) * DAY;
+  return { year: y, week: 1 + Math.round((t - wk1) / (7 * DAY)) };
+}
+const keyOf = t => new Date(t).toISOString().slice(0, 10);
+const fmt = t => { const d = new Date(t); return String(d.getUTCDate()).padStart(2, "0") + "." + String(d.getUTCMonth() + 1).padStart(2, "0") + "."; };
+const weekIdx = t => Math.round((t - ANCHOR) / (7 * DAY));
+const extraOf = t => EXTRAS[mod(weekIdx(t), EXTRAS.length)];
+const dayLabel = iso => new Date(iso).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
 
-  let me = null;
-  try { me = localStorage.getItem("putzplan-me"); } catch (e) {}
-  const thisMonday = mondayUTC(new Date());
-  let shown = thisMonday;
-  let weeks = {};
-  let db = null, canWrite = false, dbReady = false;
+function baseAssign(t) {
+  const k = weekIdx(t), out = [];
+  PEOPLE.forEach((p, i) => { out[mod(i + k, PEOPLE.length)] = p; });
+  return out;
+}
+function assignment(t) {
+  const base = baseAssign(t);
+  const swap = (weeks[keyOf(t)] || {}).swap || {};
+  const out = {};
+  TASKS.forEach((task, i) => { out[task.id] = swap[task.id] || base[i]; });
+  return { out, base };
+}
+const allDone = (task, done) => !!done[task.id] && (task.subs || []).every(s => done[s.id]);
 
-  const $ = id => document.getElementById(id);
-  const banner = $("banner");
+let me = null;
+try { me = localStorage.getItem("putzplan-me"); } catch (e) {}
+const thisMonday = mondayUTC(new Date());
+let shown = thisMonday;
+let weeks = {};
+let items = [];
+let store = null, canWrite = false, dbReady = false;
 
-  function renderWho() {
-    const row = $("who");
-    row.textContent = "";
-    PEOPLE.forEach(p => {
-      const b = document.createElement("button");
-      b.className = "pill"; b.type = "button"; b.textContent = p; b.id = "who-" + p;
-      b.setAttribute("aria-pressed", String(me === p));
-      b.addEventListener("click", () => {
-        me = me === p ? null : p;
-        try { me ? localStorage.setItem("putzplan-me", me) : localStorage.removeItem("putzplan-me"); } catch (e) {}
-        render();
-      });
-      row.appendChild(b);
-    });
-  }
+const $ = id => document.getElementById(id);
+const banner = $("banner");
+function showBanner(text) { banner.textContent = text; banner.hidden = false; }
 
-  function renderWeek() {
-    const { year, week } = isoWeek(shown);
-    $("kw").textContent = "KW " + week + (shown === thisMonday ? " · diese Woche" : "");
-    $("range").textContent = fmt(shown) + " – " + fmt(shown + 6 * DAY) + year;
-    const doc = weeks[keyOf(shown)] || {};
-    const done = doc.done || {};
-    const { out, base } = assignment(shown);
-    const tiles = $("tiles");
-    tiles.textContent = "";
-    let count = 0;
-    TASKS.forEach((task, i) => {
-      const person = out[task.id];
-      const d = done[task.id];
-      if (d) count++;
-      const el = document.createElement("article");
-      el.className = "tile" + (d ? " is-done" : "") + (me && person === me ? " is-me" : "");
-      el.innerHTML =
-        '<div class="room"><span class="icon">' + ICONS[task.icon] + '</span><h2></h2></div>' +
-        '<div><div class="person"></div><div class="swapped"></div></div>' +
-        '<div class="status"></div>' +
-        '<div class="actions"><button class="check" type="button"></button><select class="swap-sel" aria-label="Person tauschen"></select></div>';
-      el.querySelector("h2").textContent = task.name;
-      el.querySelector(".person").textContent = person;
-      el.querySelector(".swapped").textContent = person !== base[i] ? "getauscht, eigentlich " + base[i] : "";
-      if (d) {
-        const at = new Date(d.at);
-        const when = at.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
-        el.querySelector(".status").textContent = "Erledigt " + when + (d.by && d.by !== person ? " von " + d.by : "");
-      } else {
-        el.querySelector(".status").textContent = "Noch offen";
-      }
-      const btn = el.querySelector(".check");
-      btn.id = "check-" + task.id;
-      btn.textContent = d ? "Zurücksetzen" : "Erledigt";
-      btn.disabled = !canWrite;
-      btn.addEventListener("click", () => toggleDone(task.id, person, btn));
-      const sel = el.querySelector(".swap-sel");
-      sel.id = "swap-" + task.id;
-      PEOPLE.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; if (p === person) o.selected = true; sel.appendChild(o); });
-      sel.disabled = !canWrite;
-      sel.addEventListener("change", () => setSwap(task.id, sel.value, base[i]));
-      tiles.appendChild(el);
-    });
-    $("progress").innerHTML = "<strong>" + count + " von 4</strong> erledigt";
-    const free = out.frei;
-    $("free").innerHTML = "";
-    const s = document.createElement("span");
-    s.innerHTML = "Frei diese Woche: <strong></strong>";
-    s.querySelector("strong").textContent = free.length ? free.join(", ") : "niemand";
-    $("free").appendChild(s);
-    $("prev").disabled = false;
-  }
-
-  function renderAhead() {
-    const tb = $("ahead");
-    tb.textContent = "";
-    for (let w = -1; w < 6; w++) {
-      const t = thisMonday + w * 7 * DAY;
-      const { out } = assignment(t);
-      const done = (weeks[keyOf(t)] || {}).done || {};
-      const tr = document.createElement("tr");
-      if (t === shown) tr.className = "current";
-      const td0 = document.createElement("td");
-      td0.className = "mono";
-      td0.textContent = "KW " + isoWeek(t).week + "  " + fmt(t);
-      tr.appendChild(td0);
-      TASKS.forEach(task => {
-        const td = document.createElement("td");
-        td.textContent = out[task.id];
-        if (done[task.id]) { const s = document.createElement("span"); s.className = "tick"; s.textContent = "✓"; s.setAttribute("aria-label", "erledigt"); td.appendChild(s); }
-        if (me && out[task.id] === me) td.className = "me";
-        tr.appendChild(td);
-      });
-      const tdf = document.createElement("td");
-      tdf.textContent = out.frei.join(", ");
-      if (me && out.frei.includes(me)) tdf.className = "me";
-      tr.appendChild(tdf);
-      tr.addEventListener("click", () => { shown = t; render(); });
-      tb.appendChild(tr);
-    }
-  }
-
-  function render() { renderWho(); renderWeek(); renderAhead(); }
-
-  // Schreiben: eine Woche = ein Dokument, Schreibvorgänge pro Dokument nacheinander
-  const queues = {};
-  function writeWeek(t, mutate) {
-    if (!db || !canWrite) return;
-    const key = keyOf(t);
-    const cur = JSON.parse(JSON.stringify(weeks[key] || {}));
-    cur.done = cur.done || {}; cur.swap = cur.swap || {};
-    mutate(cur);
-    weeks[key] = cur; // sofort anzeigen
-    render();
-    queues[key] = (queues[key] || Promise.resolve()).then(() => setDoc(doc(db, "weeks", key), cur)).catch(e => {
-      if (e && e.code === "permission-denied") {
-        showBanner("Der Eintrag wurde abgelehnt. Lade die Seite neu und versuch es noch mal.");
-      } else if (e && e.code === "unavailable") {
-        showBanner("Speichern hat nicht geklappt, die Verbindung hakt. Versuch es gleich noch mal.");
-      } else {
-        showBanner("Speichern hat nicht geklappt. Lade die Seite neu und versuch es noch mal.");
-      }
+function renderWho() {
+  const row = $("who");
+  row.textContent = "";
+  PEOPLE.forEach(p => {
+    const b = document.createElement("button");
+    b.className = "pill"; b.type = "button"; b.textContent = p; b.id = "who-" + p;
+    b.setAttribute("aria-pressed", String(me === p));
+    b.addEventListener("click", () => {
+      me = me === p ? null : p;
+      try { me ? localStorage.setItem("putzplan-me", me) : localStorage.removeItem("putzplan-me"); } catch (e) {}
       render();
     });
-  }
-  function toggleDone(taskId, person, btn) {
-    const wasDone = !!((weeks[keyOf(shown)] || {}).done || {})[taskId];
-    if (!wasDone && canWrite) celebrate(btn);
-    writeWeek(shown, doc => {
-      if (doc.done[taskId]) delete doc.done[taskId];
-      else doc.done[taskId] = { at: new Date().toISOString(), by: me || person };
-    });
-  }
-  function celebrate(btn) {
-    if (typeof window.confetti !== "function") return;
-    const r = btn.getBoundingClientRect();
-    const origin = { x: (r.left + r.width / 2) / window.innerWidth, y: (r.top + r.height / 2) / window.innerHeight };
-    const colors = ["#e3b505", "#2f7d5b", "#4a90c2", "#ffffff", "#f07c5a"];
-    const base = { origin, colors, disableForReducedMotion: true, zIndex: 1000 };
-    window.confetti({ ...base, particleCount: 90, spread: 75, startVelocity: 45 });
-    setTimeout(() => window.confetti({ ...base, particleCount: 50, spread: 120, startVelocity: 30, scalar: 0.8 }), 150);
-  }
-  function setSwap(taskId, person, basePerson) {
-    writeWeek(shown, doc => {
-      if (person === basePerson) delete doc.swap[taskId]; else doc.swap[taskId] = person;
-    });
-  }
-  function showBanner(text) { banner.textContent = text; banner.hidden = false; }
+    row.appendChild(b);
+  });
+}
 
-  $("prev").addEventListener("click", () => { shown -= 7 * DAY; render(); });
-  $("next").addEventListener("click", () => { shown += 7 * DAY; render(); });
-  $("today").addEventListener("click", () => { shown = thisMonday; render(); });
+function renderWeek() {
+  const { year, week } = isoWeek(shown);
+  $("kw").textContent = "KW " + week + (shown === thisMonday ? " · diese Woche" : "");
+  $("range").textContent = fmt(shown) + " – " + fmt(shown + 6 * DAY) + year;
+  const done = (weeks[keyOf(shown)] || {}).done || {};
+  const { out, base } = assignment(shown);
+  const tiles = $("tiles");
+  tiles.textContent = "";
 
+  TASKS.forEach((task, i) => {
+    const person = out[task.id];
+    const d = done[task.id];
+    const el = document.createElement("article");
+    el.className = "tile" + (task.extra ? " extra" : "") + (allDone(task, done) ? " is-done" : "") + (me && person === me ? " is-me" : "");
+    el.innerHTML =
+      '<div class="room"><span class="icon">' + ICONS[task.icon] + '</span><h2></h2></div>' +
+      '<div><div class="person"></div><div class="swapped"></div></div>';
+    el.querySelector("h2").textContent = task.name;
+    el.querySelector(".person").textContent = person;
+    el.querySelector(".swapped").textContent = person !== base[i] ? "getauscht, eigentlich " + base[i] : "";
+
+    if (task.extra) {
+      const job = document.createElement("div");
+      job.className = "job"; job.textContent = extraOf(shown).long;
+      el.appendChild(job);
+    }
+    if (task.hint) {
+      const h = document.createElement("div");
+      h.className = "hint"; h.textContent = task.hint;
+      el.appendChild(h);
+    }
+
+    const status = document.createElement("div");
+    status.className = "status";
+    status.textContent = d ? "Erledigt " + dayLabel(d.at) + (d.by && d.by !== person ? " von " + d.by : "") : "Noch offen";
+    el.appendChild(status);
+
+    if (task.subs) {
+      const subs = document.createElement("div");
+      subs.className = "subs";
+      subs.innerHTML = '<span class="label">Ganze Wohnung saugen</span><div class="sub-row"></div>';
+      const row = subs.querySelector(".sub-row");
+      task.subs.forEach(s => {
+        const sd = done[s.id];
+        const b = document.createElement("button");
+        b.type = "button"; b.id = "check-" + s.id;
+        b.className = "sub" + (sd ? " on" : "");
+        b.setAttribute("aria-pressed", String(!!sd));
+        b.innerHTML = "<span></span><small></small>";
+        b.querySelector("span").textContent = (sd ? "✓ " : "") + s.label;
+        b.querySelector("small").textContent = sd ? dayLabel(sd.at) : "offen";
+        b.disabled = !canWrite;
+        b.addEventListener("click", () => toggleDone(s.id, person, b));
+        row.appendChild(b);
+      });
+      el.appendChild(subs);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.id = "check-" + task.id;
+    btn.className = "check" + (d ? " on" : "");
+    btn.textContent = d ? "Zurücksetzen" : (task.subs ? "Flur erledigt" : "Erledigt");
+    btn.disabled = !canWrite;
+    btn.addEventListener("click", () => toggleDone(task.id, person, btn));
+    const sel = document.createElement("select");
+    sel.className = "swap-sel"; sel.id = "swap-" + task.id; sel.setAttribute("aria-label", "Person für " + task.name + " tauschen");
+    PEOPLE.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; if (p === person) o.selected = true; sel.appendChild(o); });
+    sel.disabled = !canWrite;
+    sel.addEventListener("change", () => setSwap(task.id, sel.value, base[i]));
+    actions.append(btn, sel);
+    el.appendChild(actions);
+    tiles.appendChild(el);
+  });
+
+  const count = CHECKS.filter(k => done[k]).length;
+  $("progress").innerHTML = "<strong>" + count + " von " + CHECKS.length + "</strong> erledigt";
+}
+
+function itemMeta(it) {
+  if (it.bought) return "besorgt" + (it.boughtBy ? " von " + it.boughtBy : "") + (it.boughtAt ? ", " + dayLabel(it.boughtAt) : "");
+  return "eingetragen" + (it.by ? " von " + it.by : "") + (it.at ? ", " + dayLabel(it.at) : "");
+}
+function itemRow(it) {
+  const li = document.createElement("li");
+  li.className = "item" + (it.bought ? " bought" : "");
+  li.innerHTML = '<button class="tick-btn" type="button"></button><div class="text"><span class="name"></span><span class="meta"></span></div><button class="del" type="button">×</button>';
+  const tick = li.querySelector(".tick-btn");
+  tick.innerHTML = it.bought ? ICONS.check : "";
+  tick.setAttribute("aria-label", it.bought ? it.name + " wieder auf die Liste" : it.name + " als besorgt abhaken");
+  tick.disabled = !canWrite;
+  tick.addEventListener("click", () => toggleBought(it, tick));
+  li.querySelector(".name").textContent = it.name;
+  li.querySelector(".meta").textContent = itemMeta(it);
+  const del = li.querySelector(".del");
+  del.setAttribute("aria-label", it.name + " löschen");
+  del.disabled = !canWrite;
+  del.addEventListener("click", () => removeItem(it));
+  return li;
+}
+function renderShop() {
+  const open = items.filter(i => !i.bought).sort((a, b) => (a.at || "").localeCompare(b.at || ""));
+  const bought = items.filter(i => i.bought).sort((a, b) => (b.boughtAt || "").localeCompare(a.boughtAt || ""));
+  $("shop-count").textContent = open.length ? open.length + (open.length === 1 ? " Sache fehlt" : " Sachen fehlen") : "";
+
+  const ul = $("shop-open");
+  ul.textContent = "";
+  if (!open.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = dbReady ? "Alles da. Wenn etwas leer wird, trag es oben ein." : "Liste wird geladen …";
+    ul.appendChild(li);
+  }
+  open.forEach(it => ul.appendChild(itemRow(it)));
+
+  const bw = $("bought-wrap");
+  bw.hidden = !bought.length;
+  $("bought-summary").textContent = "Besorgt (" + bought.length + ")";
+  const bl = $("shop-bought");
+  bl.textContent = "";
+  bought.forEach(it => bl.appendChild(itemRow(it)));
+  $("clear-bought").disabled = !canWrite;
+
+  const openNames = new Set(open.map(i => i.name.toLowerCase()));
+  const q = $("quick");
+  q.textContent = "";
+  QUICK.filter(n => !openNames.has(n.toLowerCase())).forEach(n => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "pill"; b.textContent = n;
+    b.setAttribute("aria-label", n + " hinzufügen");
+    b.disabled = !canWrite;
+    b.addEventListener("click", () => addItem(n));
+    q.appendChild(b);
+  });
+  $("shop-add").disabled = !canWrite;
+}
+
+function renderAhead() {
+  const tb = $("ahead");
+  tb.textContent = "";
+  for (let w = -1; w < 6; w++) {
+    const t = thisMonday + w * 7 * DAY;
+    const { out } = assignment(t);
+    const done = (weeks[keyOf(t)] || {}).done || {};
+    const tr = document.createElement("tr");
+    if (t === shown) tr.className = "current";
+    const td0 = document.createElement("td");
+    td0.className = "mono";
+    td0.textContent = "KW " + isoWeek(t).week + "  " + fmt(t);
+    tr.appendChild(td0);
+    TASKS.forEach(task => {
+      const td = document.createElement("td");
+      td.textContent = out[task.id];
+      if (task.extra) { const s = document.createElement("span"); s.className = "sx"; s.textContent = " · " + extraOf(t).short; td.appendChild(s); }
+      if (allDone(task, done)) { const s = document.createElement("span"); s.className = "tick"; s.textContent = "✓"; s.setAttribute("aria-label", "erledigt"); td.appendChild(s); }
+      if (me && out[task.id] === me) td.className = "me";
+      tr.appendChild(td);
+    });
+    tr.addEventListener("click", () => { shown = t; render(); });
+    tb.appendChild(tr);
+  }
+}
+
+function render() { renderWho(); renderWeek(); renderShop(); renderAhead(); }
+
+function handleWriteError(e) {
+  if (e && e.code === "permission-denied") showBanner("Der Eintrag wurde abgelehnt. Lade die Seite neu und versuch es noch mal.");
+  else if (e && e.code === "unavailable") showBanner("Speichern hat nicht geklappt, die Verbindung hakt. Versuch es gleich noch mal.");
+  else showBanner("Speichern hat nicht geklappt. Lade die Seite neu und versuch es noch mal.");
+}
+
+// Woche schreiben: eine Woche = ein Dokument, Schreibvorgänge pro Dokument nacheinander
+const queues = {};
+function writeWeek(t, mutate) {
+  if (!store || !canWrite) return;
+  const key = keyOf(t);
+  const cur = JSON.parse(JSON.stringify(weeks[key] || {}));
+  cur.done = cur.done || {}; cur.swap = cur.swap || {};
+  mutate(cur);
+  weeks[key] = cur;
   render();
+  queues[key] = (queues[key] || Promise.resolve()).then(() => store.saveWeek(key, cur)).catch(e => { handleWriteError(e); render(); });
+}
+function toggleDone(id, person, btn) {
+  const wasDone = !!((weeks[keyOf(shown)] || {}).done || {})[id];
+  if (!wasDone && canWrite) celebrate(btn);
+  writeWeek(shown, doc => {
+    if (doc.done[id]) delete doc.done[id];
+    else doc.done[id] = { at: new Date().toISOString(), by: me || person };
+  });
+}
+function setSwap(id, person, basePerson) {
+  writeWeek(shown, doc => { if (person === basePerson) delete doc.swap[id]; else doc.swap[id] = person; });
+}
 
+// Einkaufsliste: ein Dokument pro Eintrag
+function cleanItem(it) {
+  const o = { name: it.name, by: it.by || "", at: it.at || new Date().toISOString(), bought: !!it.bought };
+  if (it.bought) { o.boughtBy = it.boughtBy || ""; o.boughtAt = it.boughtAt || new Date().toISOString(); }
+  return o;
+}
+function addItem(name) {
+  name = name.trim().replace(/\s+/g, " ").slice(0, 60);
+  if (!name || !store || !canWrite) return;
+  const existing = items.find(i => i.name.toLowerCase() === name.toLowerCase());
+  if (existing && !existing.bought) return;
+  if (existing) { store.setItem(existing.id, cleanItem({ ...existing, bought: false, at: new Date().toISOString(), by: me || "" })).catch(handleWriteError); return; }
+  store.addItem(cleanItem({ name, by: me || "" })).catch(handleWriteError);
+}
+function toggleBought(it, btn) {
+  if (!store || !canWrite) return;
+  if (!it.bought) celebrate(btn, true);
+  const next = it.bought ? { ...it, bought: false } : { ...it, bought: true, boughtBy: me || "", boughtAt: new Date().toISOString() };
+  store.setItem(it.id, cleanItem(next)).catch(handleWriteError);
+}
+function removeItem(it) {
+  if (!store || !canWrite) return;
+  store.removeItem(it.id).catch(handleWriteError);
+}
+async function clearBought() {
+  if (!store || !canWrite) return;
+  for (const it of items.filter(i => i.bought)) {
+    try { await store.removeItem(it.id); } catch (e) { handleWriteError(e); return; }
+  }
+}
+
+function celebrate(btn, small) {
+  if (typeof window.confetti !== "function") return;
+  const r = btn.getBoundingClientRect();
+  const origin = { x: (r.left + r.width / 2) / window.innerWidth, y: (r.top + r.height / 2) / window.innerHeight };
+  const colors = ["#e3b505", "#2f7d5b", "#4a90c2", "#ffffff", "#f07c5a"];
+  const base = { origin, colors, disableForReducedMotion: true, zIndex: 1000 };
+  if (small) { window.confetti({ ...base, particleCount: 40, spread: 60, startVelocity: 25, scalar: 0.7 }); return; }
+  window.confetti({ ...base, particleCount: 90, spread: 75, startVelocity: 45 });
+  setTimeout(() => window.confetti({ ...base, particleCount: 50, spread: 120, startVelocity: 30, scalar: 0.8 }), 150);
+}
+
+$("prev").addEventListener("click", () => { shown -= 7 * DAY; render(); });
+$("next").addEventListener("click", () => { shown += 7 * DAY; render(); });
+$("today").addEventListener("click", () => { shown = thisMonday; render(); });
+$("shop-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const inp = $("shop-input");
+  addItem(inp.value);
+  inp.value = "";
+});
+$("clear-bought").addEventListener("click", clearBought);
+
+render();
+
+// Vorschau ohne Datenbank: Seite mit #demo öffnen
+function startDemo() {
+  const now = Date.now(), iso = ms => new Date(ms).toISOString();
+  let n = 0;
+  weeks[keyOf(thisMonday)] = { done: { bad2: { at: iso(now - DAY), by: "Yurai" }, saugen1: { at: iso(now - 2 * DAY), by: "Dominik" } }, swap: {} };
+  items = [
+    { id: "d1", name: "Toilettenpapier", by: "Son", at: iso(now - 3 * DAY), bought: false },
+    { id: "d2", name: "Spülmittel", by: "Flo", at: iso(now - DAY), bought: false },
+    { id: "d3", name: "Müllbeutel", by: "Bram", at: iso(now - 4 * DAY), bought: true, boughtBy: "Yurai", boughtAt: iso(now - 2 * DAY) }
+  ];
+  store = {
+    saveWeek: async () => {},
+    addItem: async data => { items = [...items, { id: "n" + (++n), ...data }]; render(); },
+    setItem: async (id, data) => { items = items.map(i => i.id === id ? { id, ...data } : i); render(); },
+    removeItem: async id => { items = items.filter(i => i.id !== id); render(); }
+  };
+  canWrite = true; dbReady = true;
+  showBanner("Vorschau mit Beispieldaten. Nichts hier wird gespeichert.");
+  render();
+}
+
+async function startFirebase() {
   const offlineTimer = setTimeout(() => {
     if (!dbReady) showBanner("Der gemeinsame Speicher ist gerade nicht erreichbar. Du siehst die Rotation, kannst aber nichts abhaken.");
   }, 11000);
-
   try {
-    if (firebaseConfig.apiKey === "HIER_EINFUEGEN") throw new Error("config");
-    db = getFirestore(initializeApp(firebaseConfig));
+    const [{ initializeApp }, fs] = await Promise.all([import(FB + "firebase-app.js"), import(FB + "firebase-firestore.js")]);
+    const { getFirestore, collection, doc, setDoc, addDoc, deleteDoc, onSnapshot } = fs;
+    const db = getFirestore(initializeApp(firebaseConfig));
+    store = {
+      saveWeek: (key, data) => setDoc(doc(db, "weeks", key), data),
+      addItem: data => addDoc(collection(db, "einkauf"), data),
+      setItem: (id, data) => setDoc(doc(db, "einkauf", id), data),
+      removeItem: id => deleteDoc(doc(db, "einkauf", id))
+    };
     canWrite = true;
     render();
+    const lost = () => showBanner("Die Verbindung zum gemeinsamen Speicher ist abgebrochen. Lade die Seite neu.");
     onSnapshot(collection(db, "weeks"), snap => {
       dbReady = true; clearTimeout(offlineTimer); banner.hidden = true;
       const next = {};
       snap.forEach(d => { next[d.id] = d.data(); });
       weeks = next;
       render();
-    }, () => showBanner("Die Verbindung zum gemeinsamen Speicher ist abgebrochen. Lade die Seite neu."));
+    }, lost);
+    onSnapshot(collection(db, "einkauf"), snap => {
+      const next = [];
+      snap.forEach(d => next.push({ id: d.id, ...d.data() }));
+      items = next;
+      render();
+    }, lost);
   } catch (e) {
     clearTimeout(offlineTimer);
-    showBanner("Firebase ist noch nicht eingerichtet. Die Rotation siehst du schon, Abhaken geht erst danach.");
+    showBanner("Der gemeinsame Speicher konnte nicht geladen werden. Du siehst die Rotation, kannst aber nichts abhaken. Lade die Seite neu.");
   }
-})();
+}
+
+if (location.hash === "#demo") startDemo(); else startFirebase();
 </script>
 </body>
 </html>
