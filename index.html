@@ -265,12 +265,11 @@ const TASKS = [
     hint: "Einmal pro Woche die ganze Wohnung saugen." },
   { id: "extra", name: "Sonderaufgabe", short: "Extra", icon: "sparkle", extra: true }
 ];
-// Wechselt jede Woche der Reihe nach
+// Wechselt jede Woche
 const EXTRAS = [
   { short: "Kühlschränke", long: "Kühlschränke ausräumen und auswischen" },
   { short: "Backofen", long: "Backofen und Bleche reinigen" },
-  { short: "Herd", long: "Herd und Dunstabzugshaube entfetten" },
-  { short: "Küchenschränke", long: "Küchenschränke innen auswischen" },
+  { short: "Küchenregale", long: "Küchenregale innen auswischen" },
   { short: "Fenster", long: "Fenster und Fensterbänke putzen" },
   { short: "Mülleimer", long: "Mülleimer auswaschen" }
 ];
@@ -303,7 +302,8 @@ function isoWeek(t) {
 const keyOf = t => new Date(t).toISOString().slice(0, 10);
 const fmt = t => { const d = new Date(t); return String(d.getUTCDate()).padStart(2, "0") + "." + String(d.getUTCMonth() + 1).padStart(2, "0") + "."; };
 const weekIdx = t => Math.round((t - ANCHOR) / (7 * DAY));
-const extraOf = t => EXTRAS[mod(weekIdx(t), EXTRAS.length)];
+// Pro Runde (5 Wochen) um eine Stelle versetzt, damit nicht jede Person immer dieselbe Sonderaufgabe bekommt
+const extraOf = t => { const k = weekIdx(t); return EXTRAS[mod(k + Math.floor(k / PEOPLE.length), EXTRAS.length)]; };
 const dayLabel = iso => new Date(iso).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
 
 function baseAssign(t) {
