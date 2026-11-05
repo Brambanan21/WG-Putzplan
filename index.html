@@ -301,6 +301,14 @@ td .sx { color: var(--muted); font-weight: 400; }
         <span class="label">Kassenstand</span>
         <span class="balance" id="balance">0,00 €</span>
         <span class="balance-note" id="balance-note"></span>
+        <button class="link" type="button" id="bal-edit" style="align-self:flex-start;margin-top:4px">Kassenstand anpassen</button>
+        <form class="fee-form" id="bal-form" hidden novalidate style="margin-top:8px">
+          <label class="field"><span>Was ist gerade wirklich in der Kasse? (€)</span><input id="bal-input" type="text" inputmode="decimal" autocomplete="off" placeholder="230,00"></label>
+          <label class="field"><span>Grund (optional)</span><input id="bal-note" type="text" maxlength="80" autocomplete="off" placeholder="z. B. Startbetrag"></label>
+          <button class="btn primary" type="submit" id="bal-save">Speichern</button>
+          <button class="btn" type="button" id="bal-cancel">Abbrechen</button>
+          <div class="form-error" id="bal-error" hidden style="flex-basis:100%"></div>
+        </form>
       </div>
       <div class="dues">
         <div class="dues-head">
@@ -439,6 +447,8 @@ const kasseType = "auslage";
 let dues = {};        // "2026-11" -> { paid: { Flo: { at, cents } } }
 let fee = null;       // Monatsbeitrag in Cent, aus der Datenbank
 let feeEditing = false;
+let balEditing = false;
+let currentBalance = 0;
 const monthKeyOf = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
 let duesMonth = monthKeyOf(new Date());
 const thisMonthKey = duesMonth;
@@ -632,12 +642,12 @@ function renderAhead() {
 
 // WG-Kasse: Beträge in Cent. Einzahlung erhöht die Kasse, eine erstattete Auslage verringert sie.
 const euro = c => (c / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
-function parseEuro(str) {
+function parseEuro(str, max = 100000) {
   let t = String(str).trim().replace(/[\s€]/g, "");
   t = t.replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".");
   if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
   const c = Math.round(parseFloat(t) * 100);
-  return c > 0 && c <= 100000 ? c : null;
+  return c > 0 && c <= max ? c : null;
 }
 const shortDate = iso => { const d = new Date(iso); return String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "."; };
 const pending = {}; // zweistufige Bestätigung: Schlüssel -> Timeout
@@ -653,7 +663,11 @@ function renderKasse() {
   const paidOut = kasse.filter(e => e.type === "auslage" && e.paid).reduce((a, e) => a + e.cents, 0);
   const open = kasse.filter(e => e.type === "auslage" && !e.paid);
   const openTotal = open.reduce((a, e) => a + e.cents, 0);
-  const balance = deposits - paidOut;
+  const corrections = kasse.filter(e => e.type === "korrektur").reduce((a, e) => a + e.cents, 0);
+  const balance = deposits - paidOut + corrections;
+  currentBalance = balance;
+  $("bal-edit").hidden = balEditing || !canWrite;
+  $("bal-form").hidden = !balEditing;
   const bal = $("balance");
   bal.textContent = euro(balance);
   bal.classList.toggle("neg", balance < 0);
@@ -745,23 +759,24 @@ function renderKasse() {
     const li = document.createElement("li");
     li.className = "entry";
     const isDep = e.type === "einzahlung";
+    const isKorr = e.type === "korrektur";
     li.innerHTML = '<div class="what"><b></b> <span class="verb"></span><span class="note"></span></div><div class="amt"></div><div class="meta"></div><div class="acts"></div>';
-    li.querySelector("b").textContent = e.person;
-    li.querySelector(".verb").textContent = isDep ? "hat eingezahlt" : "hat ausgelegt";
+    li.querySelector("b").textContent = e.person || "Jemand";
+    li.querySelector(".verb").textContent = isKorr ? "hat den Kassenstand auf " + euro(e.target || 0) + " gesetzt" : isDep ? "hat eingezahlt" : "hat ausgelegt";
     li.querySelector(".note").textContent = e.note ? " · " + e.note : "";
     const amt = li.querySelector(".amt");
-    amt.textContent = (isDep ? "+" : "") + euro(e.cents);
-    if (isDep) amt.classList.add("plus");
+    amt.textContent = isKorr ? (e.cents > 0 ? "+" : "−") + euro(Math.abs(e.cents)) : (isDep ? "+" : "") + euro(e.cents);
+    if (isDep || (isKorr && e.cents > 0)) amt.classList.add("plus");
     const meta = li.querySelector(".meta");
-    meta.textContent = shortDate(e.at);
-    if (!isDep) {
+    meta.textContent = shortDate(e.at) + (isKorr ? " · Korrektur" : "");
+    if (!isDep && !isKorr) {
       const st = document.createElement("span");
       st.className = e.paid ? "" : "open";
       st.textContent = e.paid ? " · erstattet " + shortDate(e.paidAt || e.at) : " · noch offen";
       meta.appendChild(st);
     }
     const acts = li.querySelector(".acts");
-    if (!isDep) {
+    if (!isDep && !isKorr) {
       const t = document.createElement("button");
       t.type = "button"; t.className = "btn";
       t.textContent = e.paid ? "Rückgängig" : "Erstattet";
@@ -773,7 +788,7 @@ function renderKasse() {
     const del = document.createElement("button");
     del.type = "button"; del.className = "btn";
     del.textContent = "Löschen";
-    del.setAttribute("aria-label", "Eintrag löschen: " + e.person + " " + euro(e.cents));
+    del.setAttribute("aria-label", "Eintrag löschen: " + (e.person || "Korrektur") + " " + euro(Math.abs(e.cents)));
     del.disabled = !canWrite;
     del.addEventListener("click", () => twoStep("del-" + e.id, del, "Wirklich löschen?", () => removeKasse(e)));
     if (pending["del-" + e.id]) { del.textContent = "Wirklich löschen?"; del.classList.add("confirm"); }
@@ -785,6 +800,7 @@ function renderKasse() {
 function cleanKasse(e) {
   const o = { type: e.type, person: e.person, cents: e.cents, note: e.note || "", at: e.at || new Date().toISOString(), paid: !!e.paid };
   if (o.paid) o.paidAt = e.paidAt || new Date().toISOString();
+  if (e.type === "korrektur") o.target = e.target;
   return o;
 }
 function setPaid(e, paid) {
@@ -897,6 +913,27 @@ $("shop-form").addEventListener("submit", e => {
   inp.value = "";
 });
 $("clear-bought").addEventListener("click", clearBought);
+$("bal-edit").addEventListener("click", () => {
+  balEditing = true; renderKasse();
+  const inp = $("bal-input"); inp.value = (currentBalance / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 }); inp.focus(); inp.select();
+});
+$("bal-cancel").addEventListener("click", () => { balEditing = false; $("bal-error").hidden = true; renderKasse(); });
+$("bal-form").addEventListener("submit", e => {
+  e.preventDefault();
+  if (!store || !canWrite) return;
+  const raw = $("bal-input").value.trim();
+  const target = /^0+([,.]0{1,2})?$/.test(raw.replace(/[\s€]/g, "")) ? 0 : parseEuro(raw, 1000000);
+  const err = $("bal-error");
+  if (target === null) { err.textContent = "Gib einen Betrag wie 230 oder 230,50 ein, höchstens 10.000 €."; err.hidden = false; return; }
+  err.hidden = true; balEditing = false;
+  const diff = target - currentBalance;
+  if (diff !== 0) {
+    const note = $("bal-note").value.trim().replace(/\s+/g, " ").slice(0, 80);
+    store.addKasse(cleanKasse({ type: "korrektur", person: me || "", cents: diff, target, note })).catch(handleWriteError);
+  }
+  $("bal-note").value = "";
+  renderKasse();
+});
 $("dues-prev").addEventListener("click", () => { duesMonth = shiftMonth(duesMonth, -1); renderKasse(); });
 $("dues-next").addEventListener("click", () => { duesMonth = shiftMonth(duesMonth, 1); renderKasse(); });
 $("fee-edit").addEventListener("click", () => {
