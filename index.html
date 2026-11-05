@@ -399,7 +399,7 @@ const ICONS = {
   tub: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h26"/><path d="M5 15v3a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-3"/><path d="M9.5 25 8 28.5M22.5 25l1.5 3.5"/><circle cx="11" cy="9.5" r="2"/><circle cx="17" cy="6.5" r="1.5"/><circle cx="21" cy="10.5" r="1.5"/></svg>',
   shower: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 29V9a5 5 0 0 1 10 0v1"/><path d="M10.5 10h11l-1.5 3h-8Z"/><path d="M13 17v2M16 17v3M19 17v2M14 23v2M18 23v2"/></svg>',
   pan: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="13" cy="18" rx="9" ry="6"/><path d="M22 17l8-4"/><path d="M10 8c0-2 2-2 2-4M15 8c0-2 2-2 2-4"/></svg>',
-  vacuum: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="17" width="13" height="8" rx="4"/><circle cx="7" cy="27" r="1.6"/><circle cx="13" cy="27" r="1.6"/><path d="M12 17c0-7 6-11 11-11"/><path d="M23 6l4 20"/><path d="M23.5 27h6"/></svg>',
+  vacuum: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h9l-1.5 3.5h-6Z"/><path d="M8.5 7.5V20"/><path d="M23.5 12V8a4 4 0 0 0-8 0v15a3.5 3.5 0 0 1-7 0v-3"/><path d="M21.5 14v-2h4v2"/><path d="M18 29v-9.5a5.5 5.5 0 0 1 11 0V29Z"/><circle cx="23.5" cy="19" r="1.3"/><path d="M20.5 23h6v3h-6Z"/></svg>',
   sparkle: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M14 4l2.5 7.5L24 14l-7.5 2.5L14 24l-2.5-7.5L4 14l7.5-2.5Z"/><path d="M25 20l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z"/></svg>',
   check: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>'
 };
@@ -1158,72 +1158,89 @@ function vacuum() {
   if (vacuuming || window.matchMedia("(prefers-reduced-motion: reduce)").matches || !Element.prototype.animate) return;
   vacuuming = true;
   const W = window.innerWidth, H = window.innerHeight;
-  const VW = 150, D = 3600;                        // Breite des Saugers, Fahrzeit in ms
+  const k = Math.max(0.7, Math.min(1, W / 600));   // auf dem Handy etwas kleiner
+  const VW = Math.round(200 * k), VH = Math.round(220 * k);
   const car = document.createElement("div");
   car.setAttribute("aria-hidden", "true");
-  car.style.cssText = "position:fixed;left:0;bottom:calc(14px + env(safe-area-inset-bottom, 0px));width:" + VW + "px;z-index:1000;pointer-events:none";
-  car.innerHTML = '<svg viewBox="0 0 150 80" width="150" height="80" style="display:block;overflow:visible">' +
-    '<g class="vac-bob">' +
-    '<path d="M60 52 C60 20 95 8 112 14" fill="none" stroke="#1d2b36" stroke-width="7" stroke-linecap="round"/>' +
-    '<path d="M60 52 C60 20 95 8 112 14" fill="none" stroke="#5c6b75" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 5"/>' +
-    '<rect x="4" y="38" width="66" height="32" rx="16" fill="#e3b505" stroke="#1d2b36" stroke-width="3"/>' +
-    '<rect x="14" y="44" width="22" height="10" rx="5" fill="#fff6d1" stroke="#1d2b36" stroke-width="2"/>' +
-    '<circle cx="20" cy="71" r="7" fill="#1d2b36"/><circle cx="20" cy="71" r="2.5" fill="#c9d1d5"/>' +
-    '<circle cx="56" cy="71" r="7" fill="#1d2b36"/><circle cx="56" cy="71" r="2.5" fill="#c9d1d5"/>' +
-    '<path d="M112 14 L132 70" stroke="#1d2b36" stroke-width="6" stroke-linecap="round"/>' +
-    '<rect x="118" y="68" width="30" height="9" rx="3" fill="#1d2b36"/>' +
+  car.style.cssText = "position:fixed;left:0;bottom:calc(10px + env(safe-area-inset-bottom, 0px));width:" + VW + "px;height:" + VH + "px;z-index:1000;pointer-events:none";
+  car.innerHTML = '<svg viewBox="0 0 200 220" width="' + VW + '" height="' + VH + '" style="display:block;overflow:visible"><g class="vac-body">' +
+    '<path d="M145 80V45a25 25 0 0 0-50 0v120a22 22 0 0 1-44 0v-25" fill="none" stroke="#1d2b36" stroke-width="11" stroke-linecap="round"/>' +
+    '<path d="M145 80V45a25 25 0 0 0-50 0v120a22 22 0 0 1-44 0v-25" fill="none" stroke="#5c6b75" stroke-width="4" stroke-linecap="round" stroke-dasharray="3 7"/>' +
+    '<path d="M51 140V38" stroke="#93a2ab" stroke-width="9" stroke-linecap="round"/>' +
+    '<path class="vac-mouth" d="M18 10h66l-11 28H29Z" fill="#1d2b36"/>' +
+    '<g class="vac-tank"><rect x="133" y="76" width="24" height="16" rx="3" fill="#1d2b36"/>' +
+    '<path d="M108 212v-86a37 37 0 0 1 74 0v86Z" fill="#e3b505" stroke="#1d2b36" stroke-width="4" stroke-linejoin="round"/>' +
+    '<circle cx="145" cy="126" r="11" fill="#1d2b36"/>' +
+    '<rect x="124" y="152" width="42" height="36" rx="4" fill="#fff6d1" stroke="#1d2b36" stroke-width="3"/></g>' +
     '</g></svg>';
   document.body.appendChild(car);
-  const bob = car.querySelector(".vac-bob");
-  bob.animate([{ transform: "translateY(0)" }, { transform: "translateY(-2px)" }, { transform: "translateY(0)" }], { duration: 180, iterations: Infinity });
-  const startX = -VW - 20, endX = W + 40;
-  car.animate([{ transform: "translateX(" + startX + "px)" }, { transform: "translateX(" + endX + "px)" }], { duration: D, easing: "linear", fill: "forwards" });
-  const nozzleAt = t => startX + VW - 10 + (endX - startX) * (t / D);   // Düse = vordere Kante
-  const nozzleY = H - 22;
+  const body = car.querySelector(".vac-body"), tank = car.querySelector(".vac-tank");
+  tank.style.transformBox = "fill-box"; tank.style.transformOrigin = "50% 100%";
+  const centerX = W / 2 - VW * 0.4;                // Düse ungefähr in der Bildmitte
+  const IN = 1000, SUCK = 2400, OUT = 900;
+  car.animate([{ transform: "translateX(" + (-VW - 30) + "px)" }, { transform: "translateX(" + centerX + "px)" }], { duration: IN, easing: "cubic-bezier(.2,.8,.3,1)", fill: "forwards" });
 
-  // Ziele: sichtbare Texte und Knöpfe, ohne verschachtelte Doppelungen
-  const sel = "h1, header .label, .pill, .kw, .range, .progress, .nav .btn, .tile .room, .tile .person, .tile .job, .tile .hint, .tile .status, .tile .actions > *, .shop-head, .shop-form > *, .item, .balance, .balance-note, .dues-head, .due, .owed li, .kasse-form > *, tbody tr, .note, section > h2";
-  const all = [...document.querySelectorAll(sel)];
-  const set = new Set(all);
-  const targets = all.filter(el => {
-    for (let p = el.parentElement; p; p = p.parentElement) if (set.has(p)) return false;
-    const r = el.getBoundingClientRect();
-    return r.width && r.height && r.bottom > 0 && r.top < H && r.right > 0 && r.left < W;
-  }).slice(0, 120);
-
-  const anims = [];
-  const t0 = performance.now();
-  targets.forEach(el => {
-    const r = el.getBoundingClientRect();
-    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    // Zeitpunkt, an dem die Düse unter dem Element ist
-    const tHit = Math.max(0, ((cx - (startX + VW - 10)) / (endX - startX)) * D);
-    setTimeout(() => {
-      const nx = nozzleAt(performance.now() - t0) + 25;
+  // Alles Sichtbare: erst Texte und Knöpfe, dann die Flächen dahinter
+  const pick = (sel) => {
+    const all = [...document.querySelectorAll(sel)], set = new Set(all);
+    return all.filter(el => {
+      for (let p = el.parentElement; p; p = p.parentElement) if (set.has(p)) return false;
+      const r = el.getBoundingClientRect();
+      return r.width && r.height && r.bottom > 0 && r.top < H && r.right > 0 && r.left < W;
+    });
+  };
+  const small = pick("h1, header .label, .pill, .kw, .range, .progress, .nav .btn, .tile .room, .tile .person, .tile .swapped, .tile .job, .tile .hint, .tile .status, .tile .actions > *, .shop-head, .shop-form > *, .item, .empty, .bought-wrap summary, .balance, .balance-note, .dues-head, .due, .dues-note, .owed .label, .owed li, .kasse-form > *, .ledger-wrap summary, thead tr, tbody tr, .note, section > h2").slice(0, 160);
+  const big = pick(".banner, .tiles, .shop-card, .table-wrap");
+  const done = [];
+  function suck(list, mouth, spread, dur) {
+    const dist = el => { const r = el.getBoundingClientRect(); return Math.hypot(r.left + r.width / 2 - mouth.x, r.top + r.height / 2 - mouth.y); };
+    const max = Math.max(1, ...list.map(dist));
+    list.forEach(el => {
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const dx = mouth.x - cx, dy = mouth.y - cy;
+      const spin = Math.random() * 160 - 80;
       const a = el.animate([
         { transform: "none", opacity: 1 },
-        { transform: "translate(" + (nx - cx) * 0.4 + "px," + (nozzleY - cy) * 0.25 + "px) scale(0.8) rotate(-6deg)", opacity: 1, offset: 0.35 },
-        { transform: "translate(" + (nx - cx) + "px," + (nozzleY - cy) + "px) scale(0.05) rotate(" + (Math.random() * 120 - 60) + "deg)", opacity: 0 }
-      ], { duration: 420, easing: "cubic-bezier(.55,0,.85,.4)", fill: "forwards" });
-      anims.push({ el, a });
-    }, tHit);
-  });
+        { transform: "translate(" + dx * 0.25 + "px," + dy * 0.25 + "px) scale(0.85," + 1.1 + ") rotate(" + spin * 0.2 + "deg)", opacity: 1, offset: 0.4 },
+        { transform: "translate(" + dx + "px," + dy + "px) scale(0.02) rotate(" + spin + "deg)", opacity: 0 }
+      ], { duration: dur, delay: (dist(el) / max) * spread, easing: "cubic-bezier(.6,0,.9,.5)", fill: "forwards" });
+      done.push({ el, a });
+    });
+  }
 
   setTimeout(() => {
+    const m = car.querySelector(".vac-mouth").getBoundingClientRect();
+    const mouth = { x: m.left + m.width / 2, y: m.top + m.height * 0.3 };
+    body.animate([{ transform: "translate(0,0)" }, { transform: "translate(1px,-1px)" }, { transform: "translate(-1px,1px)" }, { transform: "translate(0,0)" }], { duration: 90, iterations: Math.ceil(SUCK / 90) });
+    suck(small, mouth, 1500, 560);
+    setTimeout(() => suck(big, mouth, 350, 650), 1600);
+  }, IN);
+
+  // Satt: Tank bläht sich kurz auf, dann fährt der Sauger rechts raus
+  setTimeout(() => {
+    tank.animate([{ transform: "scale(1)" }, { transform: "scale(1.12,1.08)" }, { transform: "scale(0.97)" }, { transform: "scale(1)" }], { duration: 450, easing: "ease-out" });
+    setTimeout(() => {
+      car.animate([{ transform: "translateX(" + centerX + "px)" }, { transform: "translateX(" + (W + 40) + "px)" }], { duration: OUT, easing: "cubic-bezier(.5,0,.9,.6)", fill: "forwards" });
+    }, 450);
+  }, IN + SUCK + 100);
+
+  // Alles kommt zurück: erst die Flächen, dann der Inhalt
+  setTimeout(() => {
     car.remove();
-    // Alles ploppt wieder an seinen Platz
-    anims.forEach(({ el, a }, i) => {
+    const back = [...done.filter(d => big.includes(d.el)), ...done.filter(d => !big.includes(d.el))];
+    back.forEach(({ el, a }, i) => {
       setTimeout(() => {
         a.cancel();
         el.animate([
-          { transform: "scale(0.2)", opacity: 0 },
-          { transform: "scale(1.12)", opacity: 1, offset: 0.65 },
+          { transform: "scale(0.3)", opacity: 0 },
+          { transform: "scale(1.06)", opacity: 1, offset: 0.65 },
           { transform: "none", opacity: 1 }
         ], { duration: 420, easing: "ease-out" });
-      }, Math.min(i * 12, 900));
+      }, i < big.length ? i * 60 : 250 + Math.min((i - big.length) * 8, 700));
     });
-    setTimeout(() => { vacuuming = false; }, 1400);
-  }, D + 350);
+    setTimeout(() => { vacuuming = false; }, 1500);
+  }, IN + SUCK + 100 + 450 + OUT + 150);
 }
 
 // Vorschau ohne Datenbank: Seite mit #demo öffnen
