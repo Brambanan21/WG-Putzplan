@@ -967,12 +967,12 @@ $("kasse-form").addEventListener("submit", e => {
 
 render();
 
-// Easter Egg: siebenmal schnell auf "Putzplan" tippen. Blasen lassen sich antippen und platzen.
+// Easter Egg: dreimal schnell auf "Putzplan" tippen. Blasen lassen sich antippen und platzen.
 let eggTaps = [], bubbling = false;
 document.querySelector("h1").addEventListener("click", () => {
   const now = Date.now();
   eggTaps = eggTaps.filter(t => now - t < 2500).concat(now);
-  if (eggTaps.length >= 7) { eggTaps = []; bubbles(); }
+  if (eggTaps.length >= 3) { eggTaps = []; bubbles(); }
 });
 function bubbles() {
   if (bubbling || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
