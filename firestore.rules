@@ -33,6 +33,22 @@ service cloud.firestore {
         && request.resource.data.note.size() <= 80
         && request.resource.data.paid is bool;
     }
+    // Monatsbeiträge: ein Dokument pro Monat (z. B. 2026-11), darin pro Person Zeitpunkt und Betrag
+    match /beitraege/{month} {
+      allow read: if true;
+      allow write: if month.matches('^\\d{4}-\\d{2}$')
+        && request.resource.data.keys().hasOnly(['paid'])
+        && request.resource.data.paid is map
+        && request.resource.data.paid.keys().hasOnly(['Flo', 'Yurai', 'Son', 'Dominik', 'Bram']);
+    }
+    // Einstellungen: Höhe des Monatsbeitrags in Cent
+    match /einstellungen/kasse {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasOnly(['beitrag'])
+        && request.resource.data.beitrag is int
+        && request.resource.data.beitrag > 0
+        && request.resource.data.beitrag <= 100000;
+    }
     // Alles andere ist gesperrt
     match /{document=**} {
       allow read, write: if false;

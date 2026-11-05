@@ -182,10 +182,30 @@ header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justi
 .kasse-form input, .kasse-form select {
   font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--bg); color: var(--ink); min-width: 0; width: 100%;
 }
-.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; background: var(--bg); }
-.seg button { font: inherit; font-size: 13.5px; font-weight: 600; flex: 1; border: 0; border-radius: 7px; padding: 6px 8px; background: transparent; color: var(--muted); cursor: pointer; }
-.seg button[aria-pressed="true"] { background: var(--tile); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
 .form-error { font-size: 13px; color: var(--warn); min-height: 0; }
+.dues { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.dues-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dues-head .label { flex: 1; }
+.dues-head .month { font-weight: 600; font-size: 14px; min-width: 9.5em; text-align: center; }
+.dues-head .btn { padding: 3px 9px; font-size: 13px; }
+.dues-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 420px) { .dues-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.due {
+  font: inherit; border: 1px dashed var(--muted); background: transparent; color: var(--ink); border-radius: 10px; padding: 7px 6px;
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; line-height: 1.2;
+}
+.due b { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.due small { font-size: 11.5px; color: var(--muted); }
+.due[aria-pressed="true"] { border-style: solid; border-color: var(--done); background: var(--done-bg); color: var(--done); }
+.due[aria-pressed="true"] small { color: var(--done); }
+.due.confirm { border-style: solid; border-color: var(--warn); color: var(--warn); background: transparent; }
+.due.confirm small { color: var(--warn); }
+.due[disabled] { opacity: .45; cursor: default; }
+.dues-note { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.link { font: inherit; font-size: 13px; border: 0; background: none; color: var(--ink); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; padding: 0; }
+.fee-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.fee-form .field { flex: 1 1 140px; }
+.fee-form input { font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--bg); color: var(--ink); width: 100%; }
 .ledger { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 9px 0; border-top: 1px solid var(--line); }
 .entry:first-child { border-top: 0; }
@@ -282,15 +302,28 @@ td .sx { color: var(--muted); font-weight: 400; }
         <span class="balance" id="balance">0,00 €</span>
         <span class="balance-note" id="balance-note"></span>
       </div>
+      <div class="dues">
+        <div class="dues-head">
+          <span class="label">Monatsbeitrag</span>
+          <button class="btn" type="button" id="dues-prev" aria-label="Vorheriger Monat">←</button>
+          <span class="month" id="dues-month"></span>
+          <button class="btn" type="button" id="dues-next" aria-label="Nächster Monat">→</button>
+        </div>
+        <div class="dues-row" id="dues" role="group" aria-label="Wer hat eingezahlt?"></div>
+        <div class="dues-note"><span id="dues-note"></span><button class="link" type="button" id="fee-edit">Betrag ändern</button></div>
+        <form class="fee-form" id="fee-form" hidden novalidate>
+          <label class="field"><span>Beitrag pro Person und Monat in €</span><input id="fee-input" type="text" inputmode="decimal" autocomplete="off" placeholder="20"></label>
+          <button class="btn primary" type="submit" id="fee-save">Speichern</button>
+          <button class="btn" type="button" id="fee-cancel">Abbrechen</button>
+          <div class="form-error" id="fee-error" hidden style="flex-basis:100%"></div>
+        </form>
+      </div>
       <div class="owed">
         <span class="label">Bekommt Geld zurück</span>
         <ul id="owed"></ul>
       </div>
       <form class="kasse-form" id="kasse-form" novalidate>
-        <div class="seg full" role="group" aria-label="Art des Eintrags">
-          <button type="button" id="k-type-auslage" aria-pressed="true">Etwas ausgelegt</button>
-          <button type="button" id="k-type-einzahlung" aria-pressed="false">In Kasse eingezahlt</button>
-        </div>
+        <span class="label full">Etwas für die WG gekauft?</span>
         <label class="field"><span>Wer?</span><select id="k-person"></select></label>
         <label class="field"><span>Betrag in €</span><input id="k-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="12,50"></label>
         <label class="field full"><span id="k-note-label">Wofür?</span><input id="k-note" type="text" maxlength="80" autocomplete="off" placeholder="z. B. Müllbeutel und Spülmittel"></label>
@@ -402,7 +435,15 @@ let shown = thisMonday;
 let weeks = {};
 let items = [];
 let kasse = [];
-let kasseType = "auslage";
+const kasseType = "auslage";
+let dues = {};        // "2026-11" -> { paid: { Flo: { at, cents } } }
+let fee = null;       // Monatsbeitrag in Cent, aus der Datenbank
+let feeEditing = false;
+const monthKeyOf = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+let duesMonth = monthKeyOf(new Date());
+const thisMonthKey = duesMonth;
+function shiftMonth(key, n) { const [y, m] = key.split("-").map(Number); return monthKeyOf(new Date(y, m - 1 + n, 1)); }
+const monthLabel = key => { const [y, m] = key.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("de-DE", { month: "long", year: "numeric" }); };
 let store = null, canWrite = false, dbReady = false;
 
 const $ = id => document.getElementById(id);
@@ -607,7 +648,8 @@ function twoStep(key, btn, label, action) {
 }
 
 function renderKasse() {
-  const deposits = kasse.filter(e => e.type === "einzahlung").reduce((a, e) => a + e.cents, 0);
+  const duesTotal = Object.values(dues).reduce((a, d) => a + Object.values(d.paid || {}).reduce((b, x) => b + (x.cents || 0), 0), 0);
+  const deposits = duesTotal + kasse.filter(e => e.type === "einzahlung").reduce((a, e) => a + e.cents, 0);
   const paidOut = kasse.filter(e => e.type === "auslage" && e.paid).reduce((a, e) => a + e.cents, 0);
   const open = kasse.filter(e => e.type === "auslage" && !e.paid);
   const openTotal = open.reduce((a, e) => a + e.cents, 0);
@@ -615,8 +657,8 @@ function renderKasse() {
   const bal = $("balance");
   bal.textContent = euro(balance);
   bal.classList.toggle("neg", balance < 0);
-  $("balance-note").textContent = !kasse.length
-    ? (dbReady ? "Noch nichts eingetragen. Fangt damit an, wer wie viel eingezahlt hat." : "Wird geladen …")
+  $("balance-note").textContent = !kasse.length && !duesTotal
+    ? (dbReady ? "Noch nichts eingetragen. Hakt unten ab, wer den Monatsbeitrag eingezahlt hat." : "Wird geladen …")
     : openTotal ? "Offene Erstattungen: " + euro(openTotal) + ". Danach bleiben " + euro(balance - openTotal) + "."
     : "Keine offenen Erstattungen.";
 
@@ -646,6 +688,42 @@ function renderKasse() {
     ul.appendChild(li);
   });
 
+  // Monatsbeitrag
+  $("dues-month").textContent = monthLabel(duesMonth);
+  const paid = (dues[duesMonth] || {}).paid || {};
+  const dr = $("dues");
+  dr.textContent = "";
+  PEOPLE.forEach(p => {
+    const x = paid[p];
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "due"; b.id = "due-" + p;
+    b.setAttribute("aria-pressed", String(!!x));
+    b.innerHTML = "<b></b><small></small>";
+    b.querySelector("b").textContent = (x ? "✓ " : "") + p;
+    b.querySelector("small").textContent = x ? "eingezahlt" : "offen";
+    b.setAttribute("aria-label", p + (x ? ": eingezahlt, antippen zum Zurücknehmen" : ": noch nicht eingezahlt, antippen zum Abhaken"));
+    b.disabled = !canWrite || (!x && !fee);
+    const key = "due-" + duesMonth + "-" + p;
+    if (pending[key]) { b.classList.add("confirm"); b.querySelector("small").textContent = "zurücknehmen?"; }
+    b.addEventListener("click", () => {
+      if (!x) { celebrate(b, true); setDue(duesMonth, p, true); return; }
+      if (!pending[key]) {
+        pending[key] = setTimeout(() => { delete pending[key]; renderKasse(); }, 4000);
+        renderKasse(); return;
+      }
+      clearTimeout(pending[key]); delete pending[key]; setDue(duesMonth, p, false);
+    });
+    dr.appendChild(b);
+  });
+  const nPaid = PEOPLE.filter(p => paid[p]).length;
+  const shownFee = nPaid ? Object.values(paid)[0].cents : fee;
+  $("dues-note").textContent = shownFee
+    ? euro(shownFee) + " pro Person · " + nPaid + " von " + PEOPLE.length + " eingezahlt"
+    : (dbReady ? "Legt zuerst fest, wie viel jede Person pro Monat einzahlt." : "");
+  $("fee-edit").textContent = fee ? "Betrag ändern" : "Betrag festlegen";
+  $("fee-edit").hidden = feeEditing || !canWrite;
+  $("fee-form").hidden = !feeEditing;
+
   // Formular
   const sel = $("k-person");
   const keep = sel.value || me || "";
@@ -655,12 +733,6 @@ function renderKasse() {
     PEOPLE.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; sel.appendChild(o); });
   }
   sel.value = keep;
-  const isA = kasseType === "auslage";
-  $("k-type-auslage").setAttribute("aria-pressed", String(isA));
-  $("k-type-einzahlung").setAttribute("aria-pressed", String(!isA));
-  $("k-note-label").textContent = isA ? "Wofür?" : "Notiz (optional)";
-  $("k-note").placeholder = isA ? "z. B. Müllbeutel und Spülmittel" : "z. B. Beitrag November";
-  $("k-submit").textContent = isA ? "Auslage eintragen" : "Einzahlung eintragen";
   $("k-submit").disabled = !canWrite;
 
   // Verlauf
@@ -728,6 +800,16 @@ async function payOut(person) {
 function removeKasse(e) {
   if (!store || !canWrite) return;
   store.removeKasse(e.id).catch(handleWriteError);
+}
+function setDue(month, person, isPaid) {
+  if (!store || !canWrite) return;
+  const cur = JSON.parse(JSON.stringify(dues[month] || {}));
+  cur.paid = cur.paid || {};
+  if (isPaid) cur.paid[person] = { at: new Date().toISOString(), cents: fee };
+  else delete cur.paid[person];
+  dues[month] = cur;
+  render();
+  queues["dues-" + month] = (queues["dues-" + month] || Promise.resolve()).then(() => store.setDues(month, cur)).catch(e => { handleWriteError(e); render(); });
 }
 function kasseError(msg) { const el = $("k-error"); el.textContent = msg; el.hidden = !msg; }
 
@@ -815,8 +897,21 @@ $("shop-form").addEventListener("submit", e => {
   inp.value = "";
 });
 $("clear-bought").addEventListener("click", clearBought);
-$("k-type-auslage").addEventListener("click", () => { kasseType = "auslage"; kasseError(""); renderKasse(); });
-$("k-type-einzahlung").addEventListener("click", () => { kasseType = "einzahlung"; kasseError(""); renderKasse(); });
+$("dues-prev").addEventListener("click", () => { duesMonth = shiftMonth(duesMonth, -1); renderKasse(); });
+$("dues-next").addEventListener("click", () => { duesMonth = shiftMonth(duesMonth, 1); renderKasse(); });
+$("fee-edit").addEventListener("click", () => {
+  feeEditing = true; renderKasse();
+  const inp = $("fee-input"); inp.value = fee ? (fee / 100).toLocaleString("de-DE", { minimumFractionDigits: fee % 100 ? 2 : 0 }) : ""; inp.focus();
+});
+$("fee-cancel").addEventListener("click", () => { feeEditing = false; $("fee-error").hidden = true; renderKasse(); });
+$("fee-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const c = parseEuro($("fee-input").value);
+  const err = $("fee-error");
+  if (c === null) { err.textContent = "Gib einen Betrag wie 20 oder 25,50 ein."; err.hidden = false; return; }
+  err.hidden = true; feeEditing = false; fee = c; renderKasse();
+  store.setFee(c).catch(handleWriteError);
+});
 $("kasse-form").addEventListener("submit", e => {
   e.preventDefault();
   if (!store || !canWrite) return;
@@ -850,14 +945,21 @@ function startDemo() {
     removeItem: async id => { items = items.filter(i => i.id !== id); render(); },
     addKasse: async data => { kasse = [...kasse, { id: "k" + (++n), ...data }]; render(); },
     setKasse: async (id, data) => { kasse = kasse.map(e => e.id === id ? { id, ...data } : e); render(); },
-    removeKasse: async id => { kasse = kasse.filter(e => e.id !== id); render(); }
+    removeKasse: async id => { kasse = kasse.filter(e => e.id !== id); render(); },
+    setDues: async () => {},
+    setFee: async () => {}
+  };
+  fee = 2000;
+  dues = {
+    [shiftMonth(thisMonthKey, -1)]: { paid: Object.fromEntries(PEOPLE.map(p => [p, { at: iso(now - 20 * DAY), cents: 2000 }])) },
+    [thisMonthKey]: { paid: { Flo: { at: iso(now - 4 * DAY), cents: 2000 }, Son: { at: iso(now - 3 * DAY), cents: 2000 }, Bram: { at: iso(now - DAY), cents: 2000 } } }
   };
   kasse = [
-    ...PEOPLE.map((p, i) => ({ id: "e" + i, type: "einzahlung", person: p, cents: 2000, note: "Start", at: iso(now - 6 * DAY + i * 1000), paid: false })),
     { id: "a1", type: "auslage", person: "Son", cents: 499, note: "WC-Reiniger", at: iso(now - 4 * DAY), paid: true, paidAt: iso(now - 2 * DAY) },
     { id: "a2", type: "auslage", person: "Bram", cents: 849, note: "Müllbeutel und Spülmittel", at: iso(now - DAY), paid: false },
     { id: "a3", type: "auslage", person: "Flo", cents: 1295, note: "Toilettenpapier (Großpackung)", at: iso(now - 3 * DAY), paid: false }
   ];
+
   canWrite = true; dbReady = true;
   showBanner("Vorschau mit Beispieldaten. Nichts hier wird gespeichert.");
   render();
@@ -878,7 +980,9 @@ async function startFirebase() {
       removeItem: id => deleteDoc(doc(db, "einkauf", id)),
       addKasse: data => addDoc(collection(db, "kasse"), data),
       setKasse: (id, data) => setDoc(doc(db, "kasse", id), data),
-      removeKasse: id => deleteDoc(doc(db, "kasse", id))
+      removeKasse: id => deleteDoc(doc(db, "kasse", id)),
+      setDues: (month, data) => setDoc(doc(db, "beitraege", month), data),
+      setFee: cents => setDoc(doc(db, "einstellungen", "kasse"), { beitrag: cents })
     };
     canWrite = true;
     render();
@@ -900,6 +1004,16 @@ async function startFirebase() {
       const next = [];
       snap.forEach(d => next.push({ id: d.id, ...d.data() }));
       kasse = next;
+      render();
+    }, lost);
+    onSnapshot(collection(db, "beitraege"), snap => {
+      const next = {};
+      snap.forEach(d => { next[d.id] = d.data(); });
+      dues = next;
+      render();
+    }, lost);
+    onSnapshot(doc(db, "einstellungen", "kasse"), d => {
+      fee = d.exists() ? d.data().beitrag : null;
       render();
     }, lost);
   } catch (e) {
