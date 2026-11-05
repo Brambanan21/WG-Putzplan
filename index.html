@@ -23,6 +23,7 @@
   --done-bg: #e3f2ea;
   --line: #c9d1d5;
   --me: #fff6d1;
+  --warn: #b4441f;
   --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
   --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -31,13 +32,13 @@
   :root:not([data-theme="light"]) {
     --bg: #11181d; --grout: #1b252c; --tile: #18222a; --ink: #e6ecef; --muted: #93a2ab;
     --accent: #f0c52a; --accent-ink: #231c00; --done: #6fcf9f; --done-bg: #173226;
-    --line: #2c3a43; --me: #322b10; color-scheme: dark;
+    --line: #2c3a43; --me: #322b10; --warn: #f08a63; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #11181d; --grout: #1b252c; --tile: #18222a; --ink: #e6ecef; --muted: #93a2ab;
   --accent: #f0c52a; --accent-ink: #231c00; --done: #6fcf9f; --done-bg: #173226;
-  --line: #2c3a43; --me: #322b10; color-scheme: dark;
+  --line: #2c3a43; --me: #322b10; --warn: #f08a63; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -156,6 +157,46 @@ header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justi
 .del { font: inherit; font-size: 18px; line-height: 1; border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 6px 8px; border-radius: 8px; }
 .del:hover { color: var(--ink); background: var(--grout); }
 .empty { font-size: 14px; color: var(--muted); padding: 4px 0; }
+
+/* Einkaufsliste und WG-Kasse nebeneinander */
+.side { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; align-items: start; }
+@media (max-width: 860px) { .side { grid-template-columns: minmax(0, 1fr); } }
+.side > section { min-width: 0; }
+
+/* WG-Kasse */
+.balance-box { display: flex; flex-direction: column; gap: 2px; }
+.balance { font-family: var(--font-display); font-size: 40px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.balance.neg { color: var(--warn); }
+.balance-note { font-size: 13px; color: var(--muted); }
+.owed { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 12px; }
+.owed ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.owed li { display: flex; align-items: center; gap: 10px; padding: 6px 0; flex-wrap: wrap; }
+.owed .who-name { font-weight: 600; flex: 1; min-width: 0; }
+.owed .amt { font-variant-numeric: tabular-nums; font-weight: 600; }
+.owed .btn { font-size: 13px; padding: 5px 10px; }
+.btn.confirm { background: var(--warn); border-color: var(--warn); color: var(--tile); }
+.kasse-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.kasse-form .full { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.kasse-form input, .kasse-form select {
+  font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--bg); color: var(--ink); min-width: 0; width: 100%;
+}
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; background: var(--bg); }
+.seg button { font: inherit; font-size: 13.5px; font-weight: 600; flex: 1; border: 0; border-radius: 7px; padding: 6px 8px; background: transparent; color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--tile); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+.form-error { font-size: 13px; color: var(--warn); min-height: 0; }
+.ledger { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+.entry:first-child { border-top: 0; }
+.entry .what { min-width: 0; overflow-wrap: anywhere; }
+.entry .what b { font-weight: 600; }
+.entry .amt { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+.entry .amt.plus { color: var(--done); }
+.entry .meta { font-size: 12px; color: var(--muted); }
+.entry .acts { display: flex; gap: 4px; justify-content: flex-end; align-items: center; }
+.entry .acts .btn { font-size: 12.5px; padding: 3px 8px; }
+.entry .open { color: var(--warn); font-weight: 600; }
 .bought-wrap summary { cursor: pointer; font-size: 13.5px; color: var(--muted); font-weight: 600; padding: 4px 0; }
 .bought-wrap .btn { margin-top: 8px; font-size: 13px; }
 
@@ -210,6 +251,7 @@ td .sx { color: var(--muted); font-weight: 400; }
     <div class="tiles" id="tiles"></div>
   </section>
 
+  <div class="side">
   <section aria-labelledby="shop-title">
     <div class="shop-head">
       <h2 id="shop-title">Einkaufsliste</h2>
@@ -229,6 +271,39 @@ td .sx { color: var(--muted); font-weight: 400; }
       </details>
     </div>
   </section>
+
+  <section aria-labelledby="kasse-title">
+    <div class="shop-head">
+      <h2 id="kasse-title">WG-Kasse</h2>
+    </div>
+    <div class="shop-card">
+      <div class="balance-box">
+        <span class="label">Kassenstand</span>
+        <span class="balance" id="balance">0,00 €</span>
+        <span class="balance-note" id="balance-note"></span>
+      </div>
+      <div class="owed">
+        <span class="label">Bekommt Geld zurück</span>
+        <ul id="owed"></ul>
+      </div>
+      <form class="kasse-form" id="kasse-form" novalidate>
+        <div class="seg full" role="group" aria-label="Art des Eintrags">
+          <button type="button" id="k-type-auslage" aria-pressed="true">Etwas ausgelegt</button>
+          <button type="button" id="k-type-einzahlung" aria-pressed="false">In Kasse eingezahlt</button>
+        </div>
+        <label class="field"><span>Wer?</span><select id="k-person"></select></label>
+        <label class="field"><span>Betrag in €</span><input id="k-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="12,50"></label>
+        <label class="field full"><span id="k-note-label">Wofür?</span><input id="k-note" type="text" maxlength="80" autocomplete="off" placeholder="z. B. Müllbeutel und Spülmittel"></label>
+        <div class="form-error full" id="k-error" hidden></div>
+        <button class="btn primary full" type="submit" id="k-submit">Auslage eintragen</button>
+      </form>
+      <details class="bought-wrap" id="ledger-wrap" hidden>
+        <summary id="ledger-summary">Verlauf</summary>
+        <ul class="ledger" id="ledger"></ul>
+      </details>
+    </div>
+  </section>
+  </div>
 
   <section>
     <h2>Die nächsten Wochen</h2>
@@ -267,11 +342,11 @@ const TASKS = [
 ];
 // Wechselt jede Woche
 const EXTRAS = [
-  { short: "Kühlschränke", long: "Kühlschränke ausräumen und auswischen" },
-  { short: "Backofen", long: "Backofen und Bleche reinigen" },
-  { short: "Küchenregale", long: "Küchenregale innen auswischen" },
-  { short: "Fenster", long: "Fenster und Fensterbänke putzen" },
-  { short: "Mülleimer", long: "Mülleimer auswaschen" }
+  { short: "Ofen & Mikrowelle", long: "Ofen und Mikrowelle reinigen" },
+  { short: "Mülleimer", long: "Mülleimer sauber machen" },
+  { short: "Glasmüll", long: "Glasmüll wegbringen" },
+  { short: "Kl. Kühlschrank", long: "Kleinen Kühlschrank ausräumen und auswischen" },
+  { short: "Gr. Kühlschrank", long: "Großen Kühlschrank ausräumen und auswischen" }
 ];
 const QUICK = ["Toilettenpapier", "Küchenrolle", "Spülmittel", "Müllbeutel", "Schwämme", "Allzweckreiniger", "WC-Reiniger", "Handseife"];
 const CHECKS = TASKS.flatMap(t => [t.id, ...(t.subs || []).map(s => s.id)]);
@@ -326,6 +401,8 @@ const thisMonday = mondayUTC(new Date());
 let shown = thisMonday;
 let weeks = {};
 let items = [];
+let kasse = [];
+let kasseType = "auslage";
 let store = null, canWrite = false, dbReady = false;
 
 const $ = id => document.getElementById(id);
@@ -512,7 +589,149 @@ function renderAhead() {
   }
 }
 
-function render() { renderWho(); renderWeek(); renderShop(); renderAhead(); }
+// WG-Kasse: Beträge in Cent. Einzahlung erhöht die Kasse, eine erstattete Auslage verringert sie.
+const euro = c => (c / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+function parseEuro(str) {
+  let t = String(str).trim().replace(/[\s€]/g, "");
+  t = t.replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
+  const c = Math.round(parseFloat(t) * 100);
+  return c > 0 && c <= 100000 ? c : null;
+}
+const shortDate = iso => { const d = new Date(iso); return String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "."; };
+const pending = {}; // zweistufige Bestätigung: Schlüssel -> Timeout
+function twoStep(key, btn, label, action) {
+  if (pending[key]) { clearTimeout(pending[key]); delete pending[key]; action(); return; }
+  pending[key] = setTimeout(() => { delete pending[key]; renderKasse(); }, 4000);
+  btn.textContent = label; btn.classList.add("confirm");
+}
+
+function renderKasse() {
+  const deposits = kasse.filter(e => e.type === "einzahlung").reduce((a, e) => a + e.cents, 0);
+  const paidOut = kasse.filter(e => e.type === "auslage" && e.paid).reduce((a, e) => a + e.cents, 0);
+  const open = kasse.filter(e => e.type === "auslage" && !e.paid);
+  const openTotal = open.reduce((a, e) => a + e.cents, 0);
+  const balance = deposits - paidOut;
+  const bal = $("balance");
+  bal.textContent = euro(balance);
+  bal.classList.toggle("neg", balance < 0);
+  $("balance-note").textContent = !kasse.length
+    ? (dbReady ? "Noch nichts eingetragen. Fangt damit an, wer wie viel eingezahlt hat." : "Wird geladen …")
+    : openTotal ? "Offene Erstattungen: " + euro(openTotal) + ". Danach bleiben " + euro(balance - openTotal) + "."
+    : "Keine offenen Erstattungen.";
+
+  const owed = {};
+  open.forEach(e => { owed[e.person] = (owed[e.person] || 0) + e.cents; });
+  const ul = $("owed");
+  ul.textContent = "";
+  const owers = PEOPLE.filter(p => owed[p]);
+  if (!owers.length) {
+    const li = document.createElement("li");
+    li.className = "empty"; li.textContent = "Niemand bekommt gerade etwas zurück.";
+    ul.appendChild(li);
+  }
+  owers.forEach(p => {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="who-name"></span><span class="amt"></span><button class="btn" type="button"></button>';
+    li.querySelector(".who-name").textContent = p;
+    li.querySelector(".amt").textContent = euro(owed[p]);
+    const b = li.querySelector("button");
+    b.id = "payout-" + p;
+    b.textContent = "Ausgezahlt";
+    b.setAttribute("aria-label", euro(owed[p]) + " an " + p + " ausgezahlt");
+    b.disabled = !canWrite;
+    b.addEventListener("click", () => twoStep("pay-" + p, b, "Wirklich " + euro(owed[p]) + " ausgezahlt?", () => payOut(p)));
+    if (pending["pay-" + p]) { b.textContent = "Wirklich " + euro(owed[p]) + " ausgezahlt?"; b.classList.add("confirm"); }
+    li.appendChild(b);
+    ul.appendChild(li);
+  });
+
+  // Formular
+  const sel = $("k-person");
+  const keep = sel.value || me || "";
+  if (sel.options.length !== PEOPLE.length + 1) {
+    sel.textContent = "";
+    const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "Bitte wählen"; sel.appendChild(o0);
+    PEOPLE.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; sel.appendChild(o); });
+  }
+  sel.value = keep;
+  const isA = kasseType === "auslage";
+  $("k-type-auslage").setAttribute("aria-pressed", String(isA));
+  $("k-type-einzahlung").setAttribute("aria-pressed", String(!isA));
+  $("k-note-label").textContent = isA ? "Wofür?" : "Notiz (optional)";
+  $("k-note").placeholder = isA ? "z. B. Müllbeutel und Spülmittel" : "z. B. Beitrag November";
+  $("k-submit").textContent = isA ? "Auslage eintragen" : "Einzahlung eintragen";
+  $("k-submit").disabled = !canWrite;
+
+  // Verlauf
+  const list = [...kasse].sort((a, b) => (b.at || "").localeCompare(a.at || ""));
+  $("ledger-wrap").hidden = !list.length;
+  $("ledger-summary").textContent = "Verlauf (" + list.length + ")";
+  const led = $("ledger");
+  led.textContent = "";
+  list.forEach(e => {
+    const li = document.createElement("li");
+    li.className = "entry";
+    const isDep = e.type === "einzahlung";
+    li.innerHTML = '<div class="what"><b></b> <span class="verb"></span><span class="note"></span></div><div class="amt"></div><div class="meta"></div><div class="acts"></div>';
+    li.querySelector("b").textContent = e.person;
+    li.querySelector(".verb").textContent = isDep ? "hat eingezahlt" : "hat ausgelegt";
+    li.querySelector(".note").textContent = e.note ? " · " + e.note : "";
+    const amt = li.querySelector(".amt");
+    amt.textContent = (isDep ? "+" : "") + euro(e.cents);
+    if (isDep) amt.classList.add("plus");
+    const meta = li.querySelector(".meta");
+    meta.textContent = shortDate(e.at);
+    if (!isDep) {
+      const st = document.createElement("span");
+      st.className = e.paid ? "" : "open";
+      st.textContent = e.paid ? " · erstattet " + shortDate(e.paidAt || e.at) : " · noch offen";
+      meta.appendChild(st);
+    }
+    const acts = li.querySelector(".acts");
+    if (!isDep) {
+      const t = document.createElement("button");
+      t.type = "button"; t.className = "btn";
+      t.textContent = e.paid ? "Rückgängig" : "Erstattet";
+      t.setAttribute("aria-label", (e.paid ? "Erstattung zurücknehmen: " : "Als erstattet markieren: ") + (e.note || e.person));
+      t.disabled = !canWrite;
+      t.addEventListener("click", () => setPaid(e, !e.paid));
+      acts.appendChild(t);
+    }
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "btn";
+    del.textContent = "Löschen";
+    del.setAttribute("aria-label", "Eintrag löschen: " + e.person + " " + euro(e.cents));
+    del.disabled = !canWrite;
+    del.addEventListener("click", () => twoStep("del-" + e.id, del, "Wirklich löschen?", () => removeKasse(e)));
+    if (pending["del-" + e.id]) { del.textContent = "Wirklich löschen?"; del.classList.add("confirm"); }
+    acts.appendChild(del);
+    led.appendChild(li);
+  });
+}
+
+function cleanKasse(e) {
+  const o = { type: e.type, person: e.person, cents: e.cents, note: e.note || "", at: e.at || new Date().toISOString(), paid: !!e.paid };
+  if (o.paid) o.paidAt = e.paidAt || new Date().toISOString();
+  return o;
+}
+function setPaid(e, paid) {
+  if (!store || !canWrite) return;
+  store.setKasse(e.id, cleanKasse({ ...e, paid, paidAt: paid ? new Date().toISOString() : undefined })).catch(handleWriteError);
+}
+async function payOut(person) {
+  if (!store || !canWrite) return;
+  for (const e of kasse.filter(x => x.type === "auslage" && !x.paid && x.person === person)) {
+    try { await store.setKasse(e.id, cleanKasse({ ...e, paid: true, paidAt: new Date().toISOString() })); } catch (err) { handleWriteError(err); return; }
+  }
+}
+function removeKasse(e) {
+  if (!store || !canWrite) return;
+  store.removeKasse(e.id).catch(handleWriteError);
+}
+function kasseError(msg) { const el = $("k-error"); el.textContent = msg; el.hidden = !msg; }
+
+function render() { renderWho(); renderWeek(); renderShop(); renderKasse(); renderAhead(); }
 
 function handleWriteError(e) {
   if (e && e.code === "permission-denied") showBanner("Der Eintrag wurde abgelehnt. Lade die Seite neu und versuch es noch mal.");
@@ -596,6 +815,21 @@ $("shop-form").addEventListener("submit", e => {
   inp.value = "";
 });
 $("clear-bought").addEventListener("click", clearBought);
+$("k-type-auslage").addEventListener("click", () => { kasseType = "auslage"; kasseError(""); renderKasse(); });
+$("k-type-einzahlung").addEventListener("click", () => { kasseType = "einzahlung"; kasseError(""); renderKasse(); });
+$("kasse-form").addEventListener("submit", e => {
+  e.preventDefault();
+  if (!store || !canWrite) return;
+  const person = $("k-person").value;
+  const cents = parseEuro($("k-amount").value);
+  const note = $("k-note").value.trim().replace(/\s+/g, " ").slice(0, 80);
+  if (!person) return kasseError("Wähl aus, wer das war.");
+  if (cents === null) return kasseError("Gib einen Betrag wie 12,50 ein, höchstens 1.000 €.");
+  if (kasseType === "auslage" && !note) return kasseError("Trag ein, wofür das Geld war.");
+  kasseError("");
+  store.addKasse(cleanKasse({ type: kasseType, person, cents, note })).catch(handleWriteError);
+  $("k-amount").value = ""; $("k-note").value = "";
+});
 
 render();
 
@@ -613,8 +847,17 @@ function startDemo() {
     saveWeek: async () => {},
     addItem: async data => { items = [...items, { id: "n" + (++n), ...data }]; render(); },
     setItem: async (id, data) => { items = items.map(i => i.id === id ? { id, ...data } : i); render(); },
-    removeItem: async id => { items = items.filter(i => i.id !== id); render(); }
+    removeItem: async id => { items = items.filter(i => i.id !== id); render(); },
+    addKasse: async data => { kasse = [...kasse, { id: "k" + (++n), ...data }]; render(); },
+    setKasse: async (id, data) => { kasse = kasse.map(e => e.id === id ? { id, ...data } : e); render(); },
+    removeKasse: async id => { kasse = kasse.filter(e => e.id !== id); render(); }
   };
+  kasse = [
+    ...PEOPLE.map((p, i) => ({ id: "e" + i, type: "einzahlung", person: p, cents: 2000, note: "Start", at: iso(now - 6 * DAY + i * 1000), paid: false })),
+    { id: "a1", type: "auslage", person: "Son", cents: 499, note: "WC-Reiniger", at: iso(now - 4 * DAY), paid: true, paidAt: iso(now - 2 * DAY) },
+    { id: "a2", type: "auslage", person: "Bram", cents: 849, note: "Müllbeutel und Spülmittel", at: iso(now - DAY), paid: false },
+    { id: "a3", type: "auslage", person: "Flo", cents: 1295, note: "Toilettenpapier (Großpackung)", at: iso(now - 3 * DAY), paid: false }
+  ];
   canWrite = true; dbReady = true;
   showBanner("Vorschau mit Beispieldaten. Nichts hier wird gespeichert.");
   render();
@@ -632,7 +875,10 @@ async function startFirebase() {
       saveWeek: (key, data) => setDoc(doc(db, "weeks", key), data),
       addItem: data => addDoc(collection(db, "einkauf"), data),
       setItem: (id, data) => setDoc(doc(db, "einkauf", id), data),
-      removeItem: id => deleteDoc(doc(db, "einkauf", id))
+      removeItem: id => deleteDoc(doc(db, "einkauf", id)),
+      addKasse: data => addDoc(collection(db, "kasse"), data),
+      setKasse: (id, data) => setDoc(doc(db, "kasse", id), data),
+      removeKasse: id => deleteDoc(doc(db, "kasse", id))
     };
     canWrite = true;
     render();
@@ -648,6 +894,12 @@ async function startFirebase() {
       const next = [];
       snap.forEach(d => next.push({ id: d.id, ...d.data() }));
       items = next;
+      render();
+    }, lost);
+    onSnapshot(collection(db, "kasse"), snap => {
+      const next = [];
+      snap.forEach(d => next.push({ id: d.id, ...d.data() }));
+      kasse = next;
       render();
     }, lost);
   } catch (e) {

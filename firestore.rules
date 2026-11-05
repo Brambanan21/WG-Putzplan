@@ -20,6 +20,19 @@ service cloud.firestore {
         && request.resource.data.name.size() <= 60
         && request.resource.data.bought is bool;
     }
+    // WG-Kasse: ein Dokument pro Einzahlung oder Auslage, Betrag in Cent
+    match /kasse/{entry} {
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['type', 'person', 'cents', 'note', 'at', 'paid', 'paidAt'])
+        && request.resource.data.type in ['auslage', 'einzahlung']
+        && request.resource.data.person in ['Flo', 'Yurai', 'Son', 'Dominik', 'Bram']
+        && request.resource.data.cents is int
+        && request.resource.data.cents > 0
+        && request.resource.data.cents <= 100000
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 80
+        && request.resource.data.paid is bool;
+    }
     // Alles andere ist gesperrt
     match /{document=**} {
       allow read, write: if false;
