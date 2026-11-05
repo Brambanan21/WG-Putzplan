@@ -167,6 +167,11 @@ header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justi
 .balance-box { display: flex; flex-direction: column; gap: 2px; }
 .balance { font-family: var(--font-display); font-size: 40px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .balance.neg { color: var(--warn); }
+button.balance { border: 0; background: none; padding: 0; margin: 0; color: var(--ink); text-align: left; cursor: pointer; align-self: flex-start; border-radius: 6px; }
+button.balance.neg { color: var(--warn); }
+button.balance:hover { text-decoration: underline dotted; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+.balance-input { border: 0; border-bottom: 2px solid var(--accent); background: transparent; color: var(--ink); padding: 0; margin: 0; width: 100%; max-width: 8em; border-radius: 0; }
+.balance-input:focus-visible { outline: none; }
 .balance-note { font-size: 13px; color: var(--muted); }
 .owed { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 12px; }
 .owed ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -299,16 +304,10 @@ td .sx { color: var(--muted); font-weight: 400; }
     <div class="shop-card">
       <div class="balance-box">
         <span class="label">Kassenstand</span>
-        <span class="balance" id="balance">0,00 €</span>
+        <button class="balance" type="button" id="balance" title="Antippen zum Ändern" aria-label="Kassenstand ändern">0,00 €</button>
+        <input class="balance balance-input" id="bal-input" type="text" inputmode="decimal" autocomplete="off" aria-label="Kassenstand in Euro" hidden>
         <span class="balance-note" id="balance-note"></span>
-        <button class="link" type="button" id="bal-edit" style="align-self:flex-start;margin-top:4px">Kassenstand anpassen</button>
-        <form class="fee-form" id="bal-form" hidden novalidate style="margin-top:8px">
-          <label class="field"><span>Was ist gerade wirklich in der Kasse? (€)</span><input id="bal-input" type="text" inputmode="decimal" autocomplete="off" placeholder="230,00"></label>
-          <label class="field"><span>Grund (optional)</span><input id="bal-note" type="text" maxlength="80" autocomplete="off" placeholder="z. B. Startbetrag"></label>
-          <button class="btn primary" type="submit" id="bal-save">Speichern</button>
-          <button class="btn" type="button" id="bal-cancel">Abbrechen</button>
-          <div class="form-error" id="bal-error" hidden style="flex-basis:100%"></div>
-        </form>
+        <div class="form-error" id="bal-error" hidden></div>
       </div>
       <div class="dues">
         <div class="dues-head">
@@ -666,8 +665,9 @@ function renderKasse() {
   const corrections = kasse.filter(e => e.type === "korrektur").reduce((a, e) => a + e.cents, 0);
   const balance = deposits - paidOut + corrections;
   currentBalance = balance;
-  $("bal-edit").hidden = balEditing || !canWrite;
-  $("bal-form").hidden = !balEditing;
+  $("balance").hidden = balEditing;
+  $("balance").disabled = !canWrite;
+  $("bal-input").hidden = !balEditing;
   const bal = $("balance");
   bal.textContent = euro(balance);
   bal.classList.toggle("neg", balance < 0);
@@ -913,27 +913,28 @@ $("shop-form").addEventListener("submit", e => {
   inp.value = "";
 });
 $("clear-bought").addEventListener("click", clearBought);
-$("bal-edit").addEventListener("click", () => {
-  balEditing = true; renderKasse();
+// Kassenstand: Zahl antippen, neuen Betrag eintippen, Enter oder woanders hintippen speichert, Esc bricht ab
+$("balance").addEventListener("click", () => {
+  if (!store || !canWrite) return;
+  balEditing = true; $("bal-error").hidden = true; renderKasse();
   const inp = $("bal-input"); inp.value = (currentBalance / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 }); inp.focus(); inp.select();
 });
-$("bal-cancel").addEventListener("click", () => { balEditing = false; $("bal-error").hidden = true; renderKasse(); });
-$("bal-form").addEventListener("submit", e => {
-  e.preventDefault();
-  if (!store || !canWrite) return;
+function saveBalance() {
+  if (!balEditing) return;
   const raw = $("bal-input").value.trim();
   const target = /^0+([,.]0{1,2})?$/.test(raw.replace(/[\s€]/g, "")) ? 0 : parseEuro(raw, 1000000);
   const err = $("bal-error");
-  if (target === null) { err.textContent = "Gib einen Betrag wie 230 oder 230,50 ein, höchstens 10.000 €."; err.hidden = false; return; }
+  if (target === null) { err.textContent = "Ungültiger Betrag, nichts geändert."; err.hidden = false; balEditing = false; renderKasse(); return; }
   err.hidden = true; balEditing = false;
   const diff = target - currentBalance;
-  if (diff !== 0) {
-    const note = $("bal-note").value.trim().replace(/\s+/g, " ").slice(0, 80);
-    store.addKasse(cleanKasse({ type: "korrektur", person: me || "", cents: diff, target, note })).catch(handleWriteError);
-  }
-  $("bal-note").value = "";
+  if (diff !== 0 && store && canWrite) store.addKasse(cleanKasse({ type: "korrektur", person: me || "", cents: diff, target, note: "" })).catch(handleWriteError);
   renderKasse();
+}
+$("bal-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); saveBalance(); }
+  if (e.key === "Escape") { balEditing = false; renderKasse(); }
 });
+$("bal-input").addEventListener("blur", saveBalance);
 $("dues-prev").addEventListener("click", () => { duesMonth = shiftMonth(duesMonth, -1); renderKasse(); });
 $("dues-next").addEventListener("click", () => { duesMonth = shiftMonth(duesMonth, 1); renderKasse(); });
 $("fee-edit").addEventListener("click", () => {
